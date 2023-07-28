@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "fmt"
+	_"fmt"
 	"strconv"
 	"time"
 
@@ -9,6 +9,8 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+
+	_"backend/processdata"
 )
 
 // 定义表示您的表的模型结构
@@ -18,6 +20,24 @@ type User struct {
 	State   string `gorm:"type:varchar(255); not null" json:"state" binding:"required"`
 	City    string `gorm:"type:varchar(255); not null" json:"city" binding:"required"`
 	Address string `gorm:"type:varchar(255); not null" json:"address" binding:"required"`
+}
+
+//relate to Table cardNo
+type SingleCardData struct{
+	gorm.Model
+	Person_id uint `gorm:"type:int; not null" json:"person_id" binding:"required"`
+	Card_name string `gorm:"type:varchar(255); not null" json:"card_name" binding:"required"`
+	Card_num uint `gorm:"type:int; not null" json:"card_num" binding:"required"`
+}
+
+type CardInfo struct{
+	gorm.Model
+	Card_id string `gorm:"type:varchar(255); not null" json:"card_id" binding:"required"`
+	Card_name string `gorm:"type:varchar(255); not null" json:"card_name" binding:"required"`
+	Card_character string `gorm:"type:varchar(255); not null" json:"card_character" binding:"required"`
+	Card_type string `gorm:"type:varchar(255); not null" json:"card_type" binding:"required"`
+	Card_condition string `gorm:"type:varchar(255); not null" json:"card_condition" binding:"required"`
+	Other string `gorm:"type:varchar(255); not null" json:"other" binding:"required"`
 }
 
 /* 注意点 :
