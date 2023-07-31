@@ -59,15 +59,16 @@ func InsertPersonInfoTable(db *gorm.DB) (map[uint]([]map[string]float64), map[st
 	var selldata = ReadSellData()
 	var person_id2card_id2card_num = make(map[uint]([]map[string]float64))
 	var card_id2card_name = make(map[string]string)
+	//todo:设计存储每个人对应每个卡片的状态的数据结构
 	var person_id uint
 	var card_name, card_id string
 	var card_num float64
-	var cn, qq string
+	var cn, qq, card_status string
 	for key, items := range selldata {
 		card_id = key
-		// fmt.Printf("card_id:%s ", card_id)
 		for _, item := range items {
-			if len(item) == 2 {
+			//标题行
+			if len(item) <= 3 {
 				var ok1 bool
 				card_name, ok1 = item[0].(string)
 
@@ -77,12 +78,12 @@ func InsertPersonInfoTable(db *gorm.DB) (map[uint]([]map[string]float64), map[st
 				if match1 != nil && match2 == nil {
 					cardID := match1[0]
 					card_name = card_name[len(cardID):]
-					// fmt.Printf("Card ID: %s, Card Name: %s\n", cardID, card_name)
+					fmt.Printf("Card ID: %s, Card Name: %s\n", cardID, card_name)
 					continue
 				} else if match2 != nil {
 					cardID := match2[0]
 					card_name = card_name[len(cardID):]
-					// fmt.Printf("Card ID: %s, Card Name: %s\n", cardID, card_name)
+					fmt.Printf("Card ID: %s, Card Name: %s\n", cardID, card_name)
 					continue
 				}
 
@@ -91,13 +92,15 @@ func InsertPersonInfoTable(db *gorm.DB) (map[uint]([]map[string]float64), map[st
 				} else {
 					fmt.Printf("read card_name error\n")
 				}
-			} else if len(item) == 3 {
-				var ok1, ok2, ok3 bool
+				//数据行
+			} else if len(item) == 4 {
+				var ok1, ok2, ok3, ok4 bool
 				cn, ok1 = item[0].(string)
 				qq, ok2 = item[1].(string)
 				card_num, ok3 = item[2].(float64)
-				if ok1 && ok2 && ok3 {
-					// fmt.Printf("cn:%s, qq:%s, amount:%f\n", cn, qq, card_num)
+				card_status, ok4 = item[3].(string)
+				if ok1 && ok2 && ok3 && ok4 {
+					fmt.Printf("cn:%s, qq:%s, amount:%f, card_status:%s\n", cn, qq, card_num, card_status)
 				} else {
 					fmt.Printf("read sell data error on card_id:%s, card_name:%s,cn:%s,qq:%s\n", card_id, card_name, cn, qq)
 				}
@@ -131,7 +134,7 @@ func InsertCardIndexTable(
 
 		temp_ids := []string{}
 		for _, item := range card_id2card_num {
-			for card_id, _ := range item {
+			for card_id := range item {
 				temp_ids = append(temp_ids, card_id)
 			}
 		}
@@ -186,7 +189,7 @@ func InsertCardNoTable(
 	db *gorm.DB,
 	person_id2card_id2card_num map[uint]([]map[string]float64),
 	card_id2card_name map[string]string) {
-	for card_id, _ := range card_id2card_name {
+	for card_id := range card_id2card_name {
 		// Dynamically set the table name based on cardID
 		tableName := fmt.Sprintf("cardNo%s", card_id)
 
@@ -202,7 +205,7 @@ func InsertCardNoTable(
 
 		//得到一个人对应有多少个card_id，以及每个card_id对应的card_num
 		for _, item := range card_id2card_num {
-			for card_id, _ := range item {
+			for card_id := range item {
 				//如果已经有数据，会自动更新；如果没有数据，会自动插入
 				//where查找，assign定义更新或插入的字段，firstorcreate执行更新或插入并返回结果
 				var cardno CardNo = CardNo{

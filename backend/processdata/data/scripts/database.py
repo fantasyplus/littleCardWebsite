@@ -37,7 +37,7 @@ def insertPersonInfoTable(cursor:MySQLCursor,data_sell_info):
                 card_name = item[0][match2.end():]
                 continue
             
-        elif len(item) == 3:
+        elif len(item) > 2:
             # 如果长度为3，说明是正常数据行
             cn = item[0]
             qq = item[1]

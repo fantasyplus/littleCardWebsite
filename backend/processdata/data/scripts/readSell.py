@@ -69,6 +69,12 @@ def processRow(row, single_sheet_data):
                 row_data.append(int(row[i].value))
         elif i == 1 and row[i].value is None:
             return
+        # 读取第三列，处理状态
+        if i == 2:
+            if row[i].value is None:
+                row_data.append("")
+            else:
+                row_data.append(row[i].value)
 
     single_sheet_data.append(row_data)
 
@@ -90,17 +96,17 @@ def readSellInfo(file_path):
         sheet = wb[sheet_name]  # 修改为实际的工作表名
 
         # 获取状态所在的列
-        pos_condition = 0
+        condition_index = 0
         for content in sheet[1]:
             if content.value == "状态":
-                pos_condition = content.col_idx
+                condition_index = content.col_idx
                 break
 
         # 一个谷子对应多个角色的情况
         # 一行大于三列：谷子名，角色1，角色2....角色N，数量，状态
-        if pos_condition > 3:
+        if condition_index > 3:
             # 表示要循环几次，即有一对多的情况下有几个角色
-            count_index = pos_condition - 3  # 比如5-3=2
+            count_index = condition_index - 3  # 比如5-3=2
 
             for i in range(count_index + 1):
                 # 单种谷子的数据
@@ -118,7 +124,7 @@ def readSellInfo(file_path):
                         character = row[i + 1].value
                         continue
 
-                    row = [row[0], row[i + 1]]
+                    row = [row[0], row[i + 1], row[condition_index - 1]]
                     processRow(row, single_sheet_data)
 
                 # 把第一行的角色名和谷子名加起来，再按照顺序加上card_id（19-1,19-2,19-3...）
@@ -137,7 +143,7 @@ def readSellInfo(file_path):
                 sheetdatas.extend(single_sheet_data)
 
         # 一行等于三列：谷子名，数量，状态
-        elif pos_condition == 3:
+        elif condition_index == 3:
             # 单种谷子的数据
             single_sheet_data = []
 
@@ -166,7 +172,12 @@ if __name__ == "__main__":
     split_points = []
     for i in range(len(excel_data)):
         if len(excel_data[i]) == 2:
+            print(excel_data[i])
             split_points.append(i)
+        if len(excel_data[i]) == 3:
+            print(excel_data[i])
+            split_points.append(i)
+            
 
     dict_data = {}
     for i in range(len(split_points) - 1):

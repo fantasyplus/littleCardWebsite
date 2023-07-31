@@ -2,12 +2,12 @@ package processdata_test
 
 import (
 	"backend/processdata"
-	"testing"
 	"fmt"
+	"testing"
 )
 
 func TestCardData(t *testing.T) {
-	data:=processdata.ReadCardData()
+	data := processdata.ReadCardData()
 	fmt.Println("Title:", data.Title)
 	fmt.Println("Data:")
 	for _, item := range data.Data {
@@ -17,7 +17,25 @@ func TestCardData(t *testing.T) {
 }
 
 func TestSellData(t *testing.T) {
-	processdata.ReadSellData()
+	data := processdata.ReadSellData()
+	for _, items := range data {
+		// fmt.Println("id:", key)
+		for _, item := range items {
+			if len(item) <=3 {
+				fmt.Println(item)
+			}
+			if len(item) == 4 {
+				cn, ok1 := item[0].(string)
+				qq, ok2 := item[1].(string)
+				amount, ok3 := item[2].(float64)
+				status, ok4 := item[3].(string)
+				if ok1 && ok2 && ok3 && ok4 {
+					fmt.Printf("cn:%s, qq:%s, amount:%f,status:%s\n", cn, qq, amount, status)
+				}
+
+			}
+		}
+	}
 }
 
 func TestDelData(t *testing.T) {
@@ -43,13 +61,13 @@ func TestMergeMap(t *testing.T) {
 	processdata.CreateTable(db)
 	person_id2card_id2card_num, _ := processdata.InsertPersonInfoTable(db)
 	for person_id, card_id2card_num := range person_id2card_id2card_num {
-		if person_id==20{
+		if person_id == 20 {
 			processdata.MergeMap(card_id2card_num)
 		}
 	}
 }
 
 func TestRemoveDuplicates(t *testing.T) {
-	var temp []string=[]string{"1","2","3","3","3","6","6","6","7","8","9","10","11","12","13","14","15"}
+	var temp []string = []string{"1", "2", "3", "3", "3", "6", "6", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"}
 	processdata.RemoveDuplicates(temp)
 }

@@ -28,7 +28,7 @@ func ReadSellData() (selldata map[string][][]interface{}) {
 	// for key, items := range data {
 	// 	fmt.Println("id:", key)
 	// 	for _, item := range items {
-	// 		if len(item) == 3 {
+	// 		if len(item) == 4 {
 	// 			cn, ok1 := item[0].(string)
 	// 			qq, ok2 := item[1].(string)
 	// 			amount, ok3 := item[2].(float64)
