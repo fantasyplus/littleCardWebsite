@@ -11,7 +11,7 @@ type JSONData struct {
 	Data  [][]interface{} `json:"data"`
 }
 
-func ReadCardData() {
+func ReadCardData() (cardData JSONData){
 	// 打开 JSON 文件
 	file, err := os.Open("./data/json/carddata.json")
 	if err != nil {
@@ -34,10 +34,11 @@ func ReadCardData() {
 	}
 
 	// 输出解析后的数据
-	fmt.Println("Title:", jsonData.Title)
-	fmt.Println("Data:")
-	for _, item := range jsonData.Data {
-		fmt.Printf("序号: %v, 谷名: %v, 角色: %v, 制品: %v, 状态: %v, None1: %v, None2: %v\n",
-			item[0], item[1], item[2], item[3], item[4], item[5], item[6])
-	}
+	// fmt.Println("Title:", jsonData.Title)
+	// fmt.Println("Data:")
+	// for _, item := range jsonData.Data {
+	// 	fmt.Printf("序号: %v, 谷名: %v, 角色: %v, 制品: %v, 状态: %v, None1: %v, None2: %v\n",
+	// 		item[0], item[1], item[2], item[3], item[4], item[5], item[6])
+	// }
+	return jsonData
 }

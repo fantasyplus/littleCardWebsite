@@ -10,8 +10,8 @@ d = path.dirname(__file__)  # 获取当前路径
 parent_path = os.path.dirname(d)  # 获取上一级路径
 sys.path.append(parent_path)    # 如果要导入到包在上一级
 
-from backend.readSell import readSellInfo
-from backend.readCard import readCardInfo
+from readSell import readSellInfo
+from readCard import readCardInfo
 
 def insertPersonInfoTable(cursor:MySQLCursor,data_sell_info):
     person_id2card_ids = {}
@@ -198,6 +198,7 @@ def findCardInfoByCNQQ(cn, qq):
                 card_ids = cursor.fetchone()
 
                 if card_ids is not None:
+                    print("谷子总数: {}\n".format(len(card_ids[0].split(','))))
                     card_ids_str = card_ids[0]
                     card_ids = card_ids_str.split(',')
                     one_card_info = []
@@ -220,7 +221,7 @@ def findCardInfoByCNQQ(cn, qq):
                                     card_name=row[0]
                                     card_num+=row[1]
                                     one_card_info.append((card_name, card_num))
-                                print("序号{}: \t谷子名: {}\t谷子数量: {}".format(card_id, card_name, card_num))
+                                print("序号{}: 谷子名: {} 谷子数量: {}".format(card_id, card_name, card_num))
                             else:
                                 print("Card No.{} not found".format(card_id))
                         except mysql.connector.Error as err:
@@ -241,14 +242,14 @@ def findCardInfoByCNQQ(cn, qq):
                             if card_infos:
                                 for row in card_infos:
                                     card_character, card_type, card_condition, other = row
-                                    print("角色: {}\t制品: {}\t状态: {}\t备注: {}\n"
+                                    print("角色: {}制品: {}状态: {}备注: {}\n"
                                         .format(card_character, card_type, card_condition, other))
                                     one_card_info.append((card_character, card_type, card_condition, other))
                             else:
                                 print("Card Info not found for Card ID: {}, Card Name:{}".format(card_id, card_name))
                         except mysql.connector.Error as err:
                             print("Error retrieving card info for Card ID {}: {}".format(card_id, err))
-
+                    
                     data.append(one_card_info)
                 else:
                     print("Card Index not found for Person ID: {}".format(person_id))
@@ -314,7 +315,10 @@ def writeToDataBase():
 if __name__ == "__main__":
 
     #单次读取写入数据库
+    # start = time.time()
     # writeToDataBase()
+    # end = time.time()
+    # print("耗时{}秒".format(end - start))
 
     # 计算时间
     start = time.time()

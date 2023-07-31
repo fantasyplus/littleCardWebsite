@@ -17,7 +17,7 @@ def processString(string):
         return cn, qq
 
     # 特殊情况，cn也全是数字
-    pattern = r"^(\d+)\+(\d+)$"
+    pattern = r"^(\d+)[\+\＋](\d+)$"
     match = re.match(pattern, cn_qq_str)
     if match:
         cn = match.group(1)
@@ -29,7 +29,7 @@ def processString(string):
 
     cn = result[0]
     # 去除末尾的 + 号
-    if cn[-1] == "+":
+    if cn[-1] == "+" or cn[-1] == "＋":
         cn = cn[:-1]
 
     qq = re.search(r"\d{6,}", cn_qq_str).group()
@@ -55,9 +55,18 @@ def processRow(row, single_sheet_data):
             else:
                 row_data.extend([cn, qq])
         # 读取第二列，处理数量
-        if i == 1 and row[i].value is not None:
-            num = row[i].value
+        if i == 1 and row[i].value is not None and isinstance(row[i].value, int):
+            num = int(row[i].value)
             row_data.append(num)
+        elif i == 1 and isinstance(row[i].value, str):
+            # 可能是“数量”这两个字（在第一行），是中文的话直接插入
+            pattern = re.compile(r"[\u4e00-\u9fff]+")
+            is_chinese = bool(pattern.search(row[i].value))
+            if is_chinese:
+                row_data.append(row[i].value)
+            # 不是的话就是可能为字符串形式的数字，转换为int
+            else:
+                row_data.append(int(row[i].value))
         elif i == 1 and row[i].value is None:
             return
 
@@ -96,28 +105,33 @@ def readSellInfo(file_path):
             for i in range(count_index + 1):
                 # 单种谷子的数据
                 single_sheet_data = []
-
+                name = None
+                character = None
                 # 读取整个工作表的数据
-                for row in sheet.iter_rows():
+                for j, row in enumerate(sheet.iter_rows()):
                     # 如果到达某一行为空，则遍历完毕
                     if row[0].value is None:
                         break
+                    # 如果是第一行，保存谷子名和角色名，跳过
+                    if j == 0:
+                        name = row[0].value
+                        character = row[i + 1].value
+                        continue
 
                     row = [row[0], row[i + 1]]
                     processRow(row, single_sheet_data)
 
                 # 把第一行的角色名和谷子名加起来，再按照顺序加上card_id（19-1,19-2,19-3...）
-                match = re.match(r"\d+", single_sheet_data[0][0])
+                match = re.match(r"\d+", name)
                 card_id_end_pos = match.end()
 
-                single_sheet_data[0][0] = (
-                    single_sheet_data[0][0][:card_id_end_pos]
-                    + "_"
-                    + str(i + 1)
-                    + single_sheet_data[0][0][card_id_end_pos:]
+                name = (
+                    name[:card_id_end_pos] + "_" + str(i + 1) + name[card_id_end_pos:]
                 )
-                single_sheet_data[0][0] += "-" + single_sheet_data[0][1]
-                single_sheet_data[0][1] = "数量"
+                name += "-" + character
+                amount = "数量"
+
+                single_sheet_data.insert(0, [name, amount])
 
                 # 插入单个子表数据
                 sheetdatas.extend(single_sheet_data)

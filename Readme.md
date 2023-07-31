@@ -14,15 +14,15 @@ CREATE TABLE IF NOT EXISTS cardInfo (
   card_name VARCHAR(255),
   card_character VARCHAR(255),
   card_type VARCHAR(255),
-  card_condition VARCHAR(255),
-  other VARCHAR(255)
+  card_condition VARCHAR(1024),
+  other VARCHAR(1024)
 );
 ```
 
 ```
 CREATE TABLE IF NOT EXISTS cardIndex (
   person_id INT,
-  card_ids VARCHAR(1024),
+  card_ids VARCHAR(8192),
   FOREIGN KEY (person_id) REFERENCES personInfo(person_id)
 );
 ```
@@ -32,6 +32,7 @@ CREATE TABLE cardNo{} (
   person_id INT,
   card_name VARCHAR(255),
   card_num INT,
+  status VARCHAR(255),
   FOREIGN KEY (person_id) REFERENCES personInfo(person_id)
 );
 ```
