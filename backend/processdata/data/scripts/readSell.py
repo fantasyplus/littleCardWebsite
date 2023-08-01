@@ -72,7 +72,7 @@ def processRow(row, single_sheet_data):
         # 读取第三列，处理状态
         if i == 2:
             if row[i].value is None:
-                row_data.append("")
+                row_data.append("none")
             else:
                 row_data.append(row[i].value)
 
@@ -172,10 +172,10 @@ if __name__ == "__main__":
     split_points = []
     for i in range(len(excel_data)):
         if len(excel_data[i]) == 2:
-            print(excel_data[i])
+            # print(excel_data[i])
             split_points.append(i)
         if len(excel_data[i]) == 3:
-            print(excel_data[i])
+            # print(excel_data[i])
             split_points.append(i)
             
 

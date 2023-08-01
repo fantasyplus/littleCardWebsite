@@ -21,7 +21,7 @@ func TestSellData(t *testing.T) {
 	for _, items := range data {
 		// fmt.Println("id:", key)
 		for _, item := range items {
-			if len(item) <=3 {
+			if len(item) <= 3 {
 				fmt.Println(item)
 			}
 			if len(item) == 4 {
@@ -45,22 +45,22 @@ func TestDelData(t *testing.T) {
 func TestDb(t *testing.T) {
 	db := processdata.ConnectDB()
 	processdata.CreateTable(db)
-	person_id2card_id2card_num, card_id2card_name := processdata.InsertPersonInfoTable(db)
-	processdata.InsertCardIndexTable(db, person_id2card_id2card_num)
+	person_id2card_ids2card_num, card_id2card_name, card_id2person_ids2status := processdata.InsertPersonInfoTable(db)
+	processdata.InsertCardIndexTable(db, person_id2card_ids2card_num)
 	processdata.InsertCardInfoTable(db)
-	processdata.InsertCardNoTable(db, person_id2card_id2card_num, card_id2card_name)
+	processdata.InsertCardNoTable(db, person_id2card_ids2card_num, card_id2card_name, card_id2person_ids2status)
 }
 
 func TestFind(t *testing.T) {
 	db := processdata.ConnectDB()
-	processdata.FindCardInfoByCNQQ(db, "heitai", "")
+	processdata.FindCardInfoByCNQQ(db, "糖", "")
 }
 
 func TestMergeMap(t *testing.T) {
 	db := processdata.ConnectDB()
 	processdata.CreateTable(db)
-	person_id2card_id2card_num, _ := processdata.InsertPersonInfoTable(db)
-	for person_id, card_id2card_num := range person_id2card_id2card_num {
+	person_id2card_ids2card_num, _, _ := processdata.InsertPersonInfoTable(db)
+	for person_id, card_id2card_num := range person_id2card_ids2card_num {
 		if person_id == 20 {
 			processdata.MergeMap(card_id2card_num)
 		}
@@ -70,4 +70,9 @@ func TestMergeMap(t *testing.T) {
 func TestRemoveDuplicates(t *testing.T) {
 	var temp []string = []string{"1", "2", "3", "3", "3", "6", "6", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"}
 	processdata.RemoveDuplicates(temp)
+}
+
+func TestUpdateStatusByCNQQ(t *testing.T) {
+	db := processdata.ConnectDB()
+	processdata.UpdateStatusByCNQQ(db, "糖", "", "什么鬼")
 }

@@ -11,7 +11,6 @@ import (
 )
 
 func ConnectDB() *gorm.DB {
-	// 替换下面的数据库连接信息为你自己的MySQL配置
 	dsn := "root:yxdbc2008@tcp(127.0.0.1:3306)/non_commercial_test?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
@@ -35,7 +34,10 @@ func DelteTable(db *gorm.DB) {
 	db.Migrator().DropTable(&PersonInfo{}, &CardInfo{}, &CardIndex{})
 }
 
-func InsertPersonInfoTable(db *gorm.DB) (map[uint]([]map[string]float64), map[string]string) {
+func InsertPersonInfoTable(db *gorm.DB) (
+	map[uint]([]map[string]float64),
+	map[string]string,
+	map[string][]map[uint]string) {
 	// 定义插入数据的闭包
 	insertPersonInfoTable := func(cn, qq string) (uint, error) {
 		//如果已经有数据，会自动更新；如果没有数据，会自动插入
@@ -45,7 +47,7 @@ func InsertPersonInfoTable(db *gorm.DB) (map[uint]([]map[string]float64), map[st
 			CN:    cn,
 			QQ:    qq,
 		}
-		result := db.Where(&PersonInfo{CN: cn, QQ: qq}).Assign(PersonInfo{CN: cn, QQ: qq}).FirstOrCreate(&personinfo)
+		result := db.Where(&PersonInfo{CN: cn, QQ: qq}).Assign(personinfo).FirstOrCreate(&personinfo)
 		if result.Error != nil {
 			return 0, result.Error
 		}
@@ -57,9 +59,14 @@ func InsertPersonInfoTable(db *gorm.DB) (map[uint]([]map[string]float64), map[st
 	}
 
 	var selldata = ReadSellData()
-	var person_id2card_id2card_num = make(map[uint]([]map[string]float64))
+	// person_id为key， value为一个map数组，map数组的元素的key为card_id，value为card_num
+	// 相当于一个人对应了多少个谷子，每个谷子又有多少数量
+	var person_id2card_ids2card_num = make(map[uint]([]map[string]float64))
+	// 谷子id和谷子名字的映射
 	var card_id2card_name = make(map[string]string)
-	//todo:设计存储每个人对应每个卡片的状态的数据结构
+	// 当某个cn和qq对应的status有信息时，用卡片id存储结构体数组，每个元素包含person_id和status
+	// 根据card_id查找cardNo表，根据person_id查找对应行，更新status
+	var card_id2person_ids2status = make(map[string][]map[uint]string)
 	var person_id uint
 	var card_name, card_id string
 	var card_num float64
@@ -78,12 +85,12 @@ func InsertPersonInfoTable(db *gorm.DB) (map[uint]([]map[string]float64), map[st
 				if match1 != nil && match2 == nil {
 					cardID := match1[0]
 					card_name = card_name[len(cardID):]
-					fmt.Printf("Card ID: %s, Card Name: %s\n", cardID, card_name)
+					// fmt.Printf("Card ID: %s, Card Name: %s\n", cardID, card_name)
 					continue
 				} else if match2 != nil {
 					cardID := match2[0]
 					card_name = card_name[len(cardID):]
-					fmt.Printf("Card ID: %s, Card Name: %s\n", cardID, card_name)
+					// fmt.Printf("Card ID: %s, Card Name: %s\n", cardID, card_name)
 					continue
 				}
 
@@ -100,7 +107,7 @@ func InsertPersonInfoTable(db *gorm.DB) (map[uint]([]map[string]float64), map[st
 				card_num, ok3 = item[2].(float64)
 				card_status, ok4 = item[3].(string)
 				if ok1 && ok2 && ok3 && ok4 {
-					fmt.Printf("cn:%s, qq:%s, amount:%f, card_status:%s\n", cn, qq, card_num, card_status)
+					// fmt.Printf("cn:%s, qq:%s, amount:%f, card_status:%s\n", cn, qq, card_num, card_status)
 				} else {
 					fmt.Printf("read sell data error on card_id:%s, card_name:%s,cn:%s,qq:%s\n", card_id, card_name, cn, qq)
 				}
@@ -112,10 +119,13 @@ func InsertPersonInfoTable(db *gorm.DB) (map[uint]([]map[string]float64), map[st
 				panic("failed to insert data: " + err.Error())
 			}
 
+			// 为每个card_id创建一个结构体数组，数组每个元素包含person_id和status
+			card_id2person_ids2status[card_id] = append(card_id2person_ids2status[card_id], map[uint]string{person_id: card_status})
+
 			// 创建新的嵌套card_id2card_num并插入数据，对应person_id
-			person_id2card_id2card_num[person_id] = append(person_id2card_id2card_num[person_id], map[string]float64{card_id: card_num})
+			person_id2card_ids2card_num[person_id] = append(person_id2card_ids2card_num[person_id], map[string]float64{card_id: card_num})
 			// if person_id == 20 {
-			// 	fmt.Println(cn, person_id, person_id2card_id2card_num[person_id])
+			// 	fmt.Println(cn, person_id, person_id2card_ids2card_num[person_id])
 			// }
 
 			//card_id和card_name对应关系
@@ -123,13 +133,13 @@ func InsertPersonInfoTable(db *gorm.DB) (map[uint]([]map[string]float64), map[st
 			// fmt.Println(card_id, card_id2card_name[card_id])
 		}
 	}
-	return person_id2card_id2card_num, card_id2card_name
+	return person_id2card_ids2card_num, card_id2card_name, card_id2person_ids2status
 }
 
 func InsertCardIndexTable(
 	db *gorm.DB,
-	person_id2card_id2card_num map[uint]([]map[string]float64)) {
-	for person_id, card_id2card_num := range person_id2card_id2card_num {
+	person_id2card_ids2card_num map[uint]([]map[string]float64)) {
+	for person_id, card_id2card_num := range person_id2card_ids2card_num {
 		// fmt.Println(person_id, card_id2card_num)
 
 		temp_ids := []string{}
@@ -150,7 +160,7 @@ func InsertCardIndexTable(
 			PersonID: int(person_id),
 			CardIDs:  card_ids,
 		}
-		result := db.Where(&CardIndex{PersonID: int(person_id)}).Assign(CardIndex{PersonID: int(person_id), CardIDs: card_ids}).FirstOrCreate(&cardindex)
+		result := db.Where(&CardIndex{PersonID: int(person_id)}).Assign(cardindex).FirstOrCreate(&cardindex)
 
 		if result.Error != nil {
 			fmt.Println("insertIntoCardIndexTable error:", result.Error)
@@ -177,7 +187,7 @@ func InsertCardInfoTable(db *gorm.DB) {
 			CardCondition: card_condition.(string),
 			Other:         other.(string),
 		}
-		result := db.Where(&CardInfo{CardID: card_id.(string)}).Assign(&assign_cardinfo).FirstOrCreate(&cardinfo)
+		result := db.Where(&CardInfo{CardID: card_id.(string)}).Assign(assign_cardinfo).FirstOrCreate(&cardinfo)
 
 		if result.Error != nil {
 			fmt.Println("insertIntoCardInfoTable error:", result.Error)
@@ -187,8 +197,9 @@ func InsertCardInfoTable(db *gorm.DB) {
 
 func InsertCardNoTable(
 	db *gorm.DB,
-	person_id2card_id2card_num map[uint]([]map[string]float64),
-	card_id2card_name map[string]string) {
+	person_id2card_ids2card_num map[uint]([]map[string]float64),
+	card_id2card_name map[string]string,
+	card_id2person_ids2status map[string][]map[uint]string) {
 	for card_id := range card_id2card_name {
 		// Dynamically set the table name based on cardID
 		tableName := fmt.Sprintf("cardNo%s", card_id)
@@ -199,25 +210,37 @@ func InsertCardNoTable(
 		// fmt.Printf("Created table %s\n", tableName)
 	}
 	// 根据每个person_id对应的card_id2card_num字典，插入或更新cardNo表
-	for person_id, card_id2card_num := range person_id2card_id2card_num {
+	for person_id, card_id2card_num := range person_id2card_ids2card_num {
 		// 把相同card_id的card_num加起来
 		card_id2card_num = MergeMap(card_id2card_num)
 
 		//得到一个人对应有多少个card_id，以及每个card_id对应的card_num
 		for _, item := range card_id2card_num {
 			for card_id := range item {
-				//如果已经有数据，会自动更新；如果没有数据，会自动插入
-				//where查找，assign定义更新或插入的字段，firstorcreate执行更新或插入并返回结果
+				getStatus := func() string {
+					for _, item := range card_id2person_ids2status[card_id] {
+						for key, status := range item {
+							if key == person_id {
+								// fmt.Printf("card_id:%s,person_id:%d, status:%s\n", card_id, person_id, status)
+								return status
+							}
+						}
+					}
+					return "none"
+				}
+
 				var cardno CardNo = CardNo{
 					Model:    gorm.Model{},
 					PersonID: int(person_id),
 					CardName: card_id2card_name[card_id],
 					CardNum:  item[card_id],
-					Status:   "",
+					Status:   getStatus(),
 				}
 
 				tableName := fmt.Sprintf("cardNo%s", card_id)
-				result := db.Table(tableName).Where(&CardNo{PersonID: int(person_id)}).Assign(&cardno).FirstOrCreate(&cardno)
+				//如果已经有数据，会自动更新；如果没有数据，会自动插入
+				//where查找，assign定义更新或插入的字段，firstorcreate执行更新或插入并返回结果
+				result := db.Table(tableName).Where(&CardNo{PersonID: int(person_id)}).Assign(cardno).FirstOrCreate(&cardno)
 				if result.Error != nil {
 					fmt.Printf("card_id:%s", card_id)
 					fmt.Println("insertIntoCardNoTable error:", result.Error)
@@ -243,6 +266,7 @@ func FindCardInfoByCNQQ(db *gorm.DB, cn, qq string) [][]interface{} {
 		db.Where("person_id = ?", item.ID).Find(&cardindex)
 		card_ids := strings.Split(cardindex.CardIDs, ",")
 		//去重，在之前已经把一张表里一个人买了多次的谷子数量合并成一条记录了
+		//todo:可以在插入cardindex表的时候就去重
 		card_ids = RemoveDuplicates(card_ids)
 
 		fmt.Println("谷子总数:", len(card_ids))
@@ -262,6 +286,7 @@ func FindCardInfoByCNQQ(db *gorm.DB, cn, qq string) [][]interface{} {
 			fmt.Printf("序号:%s, 谷子名:%s, 谷子数量:%d ", card_id, card_name, int(card_num))
 
 			//预处理，如果是一对多的情况，card_id为(19_1,1_1形式)，改成19,1
+			//因为card_info表里的card_id是不带下划线的
 			if strings.Contains(card_id, "_") {
 				card_id = strings.Split(card_id, "_")[0]
 			}
@@ -275,6 +300,58 @@ func FindCardInfoByCNQQ(db *gorm.DB, cn, qq string) [][]interface{} {
 
 	res := [][]interface{}{}
 	return res
+}
+
+// 根据cn和qq和cardInfo更新谷子状态，必须要是cardInfo里已发货的谷子才能更新
+func UpdateStatusByCNQQ(db *gorm.DB, cn, qq, status string) {
+	fmt.Printf("-----更新%s的谷子状态为:%s-----\n", cn, status)
+
+	// 先把谷子的发货信息保存下来
+	var cardinfo []CardInfo
+	db.Table("card_info").Find(&cardinfo)
+
+	//保存card_id和card_status的对应关系
+	card_id2card_status := map[string]string{}
+	for _, item := range cardinfo {
+		card_id2card_status[item.CardID] = item.CardCondition
+	}
+	// fmt.Println(card_id2card_status)
+
+	// 查找 person_id对应的card_ids
+	// 先通过person_info表查找person_id
+	var personInfo []PersonInfo
+	db.Where("cn = ? OR qq = ?", cn, qq).Find(&personInfo)
+
+	//一个cn有可能对应多个person_id（不同的qq号）
+	for _, item := range personInfo {
+		fmt.Println(item.CN, item.QQ)
+
+		//再根据person_id查找card_ids
+		var cardindex CardIndex
+		db.Where("person_id = ?", item.ID).Find(&cardindex)
+		card_ids := strings.Split(cardindex.CardIDs, ",")
+		//去重，在之前已经把一张表里一个人买了多次的谷子数量合并成一条记录了
+		//todo:可以在插入cardindex表的时候就去重
+		card_ids = RemoveDuplicates(card_ids)
+		// fmt.Println(card_ids)
+		//根据card_id2card_status的信息更新card_ids的状态
+		for _, card_id := range card_ids {
+			//预处理，如果是一对多的情况，card_id为(19_1,1_1形式)，改成19,1
+			//这里只取第一个，因为card_id2card_status里的card_id是不带_的
+			query_card_id := card_id
+			if strings.Contains(query_card_id, "_") {
+				query_card_id = strings.Split(query_card_id, "_")[0]
+			}
+			
+			//如果这个谷子是已发货的，更新cardNo表的对应person_id的状态
+			if card_id2card_status[query_card_id] == "已到货" {
+				fmt.Printf("更新card_id:%s,person_id:%d的状态为:%s\n", card_id, item.ID, status)
+
+				tableName := fmt.Sprintf("cardNo%s", card_id)
+				db.Table(tableName).Where("person_id = ?", item.ID).Update("status", status)
+			}
+		}
+	}
 }
 
 // 去重函数，输入一个字符串切片，返回去重后的切片
