@@ -74,5 +74,5 @@ func TestRemoveDuplicates(t *testing.T) {
 
 func TestUpdateStatusByCNQQ(t *testing.T) {
 	db := processdata.ConnectDB()
-	processdata.UpdateStatusByCNQQ(db, "糖", "", "什么鬼")
+	processdata.UpdateStatusByCNQQ(db, "银河", "", "什么鬼")
 }

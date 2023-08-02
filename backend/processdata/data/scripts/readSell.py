@@ -79,13 +79,13 @@ def processRow(row, single_sheet_data):
     single_sheet_data.append(row_data)
 
 
-def readSellInfo(file_path):
-    p = path.dirname(__file__) + "/../excel/" + file_path
+def readSellInfo(excel_name):
+    p = path.dirname(__file__) + "/../test_excel/" + excel_name
     # 读取Excel文件
-    wb = openpyxl.load_workbook(p)
+    wb = openpyxl.load_workbook(p, data_only=True)
     sheet_names = wb.sheetnames
     # sheet_names=[wb.sheetnames[16]]
-    # print(sheet_names)
+    print(sheet_names)
 
     # 一个表格的所有谷子信息
     # 每一个元素对应一种谷子的信息
@@ -163,11 +163,7 @@ def readSellInfo(file_path):
     return sheetdatas
 
 
-if __name__ == "__main__":
-    file_name = "sell_info.xlsx"
-
-    excel_data = readSellInfo(file_name)
-
+def writeJsonFile(json_name):
     # 分割每个谷子的数据，然后存入字典
     split_points = []
     for i in range(len(excel_data)):
@@ -177,7 +173,6 @@ if __name__ == "__main__":
         if len(excel_data[i]) == 3:
             # print(excel_data[i])
             split_points.append(i)
-            
 
     dict_data = {}
     for i in range(len(split_points) - 1):
@@ -199,9 +194,16 @@ if __name__ == "__main__":
             dict_data[card_id] = excel_data[split_index : split_points[i + 1]]
     # print(dict_data)
 
-    file_path = "selldata.json"
-    p = path.dirname(__file__) + "/../json/" + file_path
+    p = path.dirname(__file__) + "/../json/" + json_name
 
     # Convert list to JSON and save it to the file
     with open(p, "w", encoding="utf-8") as json_file:
         json.dump(dict_data, json_file, ensure_ascii=False, indent=4)
+
+
+if __name__ == "__main__":
+    file_name = "selldata_2023_08_02_1.xlsx"
+
+    excel_data = readSellInfo(file_name)
+
+    # writeJsonFile("selldata.json")
