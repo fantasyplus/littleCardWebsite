@@ -24,7 +24,7 @@ hr, app = rpc.getEtApplication()
 app.Visible=False
 workbooks = app.Workbooks
 
-hr, workbook = workbooks.Open('/home/web/web/web-project/backend/processdata/data/scripts/selldata_2023_08_02_1.xlsx')
-workbook.SaveAs('/home/web/web/web-project/backend/processdata/data/test_excel/selldata_2023_08_02_1.xlsx')
+hr, workbook = workbooks.Open('/home/web/web/web-project/backend/processdata/data/scripts/selldata_2023_08_04_1.xlsx')
+workbook.SaveAs('/home/web/web/web-project/backend/processdata/data/test_excel/selldata_2023_08_04_1.xlsx')
 workbook.Close()
 app.Quit()

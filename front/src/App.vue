@@ -1,6 +1,8 @@
 <script setup>
 import { ref, toRaw } from "vue"
 import request from "./utils/request.js"
+import words from "./components/words.vue"
+
 // data
 let searchInput = $ref("")
 let tableData = $ref([{
@@ -54,7 +56,7 @@ let tableRowData = $ref({
 })
 
 let totalPage = $ref(5)
-let curPage=$ref(1)
+let curPage = $ref(1)
 // methods
 
 
@@ -66,7 +68,7 @@ const getTableData = async (cur = 1) => {
   })
   tableData = res.data.data
   totalPage = Math.ceil(res.data.totalitems / res.data.pageSize)
-  console.log("init table:",res)
+  console.log("init table:", res)
 }
 //init table data
 getTableData()
@@ -149,7 +151,7 @@ const handleSearch = async () => {
     let res = await request.get(`/list/${searchInput}`)
     tableData = res.data
   }
-  else{
+  else {
     await getTableData(curPage)
   }
 }
@@ -157,6 +159,8 @@ const handleSearch = async () => {
 </script>
 
 <template>
+  <!-- test -->
+  <words />
   <div class="table-box">
     <!-- Title -->
     <div class="title">
@@ -188,7 +192,7 @@ const handleSearch = async () => {
       </el-table-column>
     </el-table>
     <el-pagination @current-change="handleChangePage" class="table-pagination" layout="prev, pager, next"
-      :page-count="totalPage" :hide-on-single-page="true" v-model:current-page="curPage"/>
+      :page-count="totalPage" :hide-on-single-page="true" v-model:current-page="curPage" />
 
   </div>
   <!-- Form -->

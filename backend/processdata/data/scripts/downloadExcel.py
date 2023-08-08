@@ -95,6 +95,7 @@ class TengXunDocument:
 
 def renameExcel():
     p = path.dirname(__file__) + "/../test_excel/"
+    file_name=""
 
     # 获取文件夹内所有文件和子文件夹
     files = os.listdir(p)
@@ -112,20 +113,26 @@ def renameExcel():
         for temp_name in files:
             if temp_name.find(current_datetime) != -1:
                 temp_names.append(temp_name)
-        # 找到最大的那个
-        file_name = max(temp_names)
 
-        # 找到最后一个下划线的位置
-        cnt_index = file_name.rfind("_")
-        if cnt_index != -1:
-            # 提取最后一个下划线后的部分
-            cnt = file_name[cnt_index + 1 :]
+        if len(temp_names) != 0:
+            # 找到最大的那个
+            file_name = max(temp_names)
 
-        # 取出序号
-        cnt = cnt[: cnt.find(".xlsx")]
-        cnt = int(cnt) + 1
-        # print(cnt)
-        file_name = f"selldata_{current_datetime}_{cnt}.xlsx"
+            # 找到最后一个下划线的位置
+            cnt_index = file_name.rfind("_")
+            if cnt_index != -1:
+                # 提取最后一个下划线后的部分
+                cnt = file_name[cnt_index + 1 :]
+
+            # 取出序号
+            cnt = cnt[: cnt.find(".xlsx")]
+            cnt = int(cnt) + 1
+            # print(cnt)
+            file_name = f"selldata_{current_datetime}_{cnt}.xlsx"
+        #如果没有，那就是今天第一次下载，创建新的文件
+        else:
+            cnt = 1
+            file_name = f"selldata_{current_datetime}_{cnt}.xlsx"
     return p + file_name
 
 

@@ -78,3 +78,5 @@ delete from cardindex;
 delete from cardinfo;
 delete from personinfo;
 ```
+
+rsync -avr dist ubuntu@myweb:/home/ubuntu
