@@ -6,9 +6,7 @@
 
 # 调起WPS必需通过createXXXRpcInstance接口，所以导入它是必需的
 # 以WPS文字为例
-from time import sleep
-from pywpsrpc.rpcetapi import (createEtRpcInstance,etapi)
-from pywpsrpc import RpcIter
+from pywpsrpc.rpcetapi import createEtRpcInstance, etapi
 
 # 这里仅创建RPC实例
 hr, rpc = createEtRpcInstance()
@@ -21,10 +19,9 @@ hr, rpc = createEtRpcInstance()
 # 通过rpc实例调起WPS进程
 hr, app = rpc.getEtApplication()
 
-app.Visible=False
 workbooks = app.Workbooks
 
-hr, workbook = workbooks.Open('/home/web/web/web-project/backend/processdata/data/scripts/selldata_2023_08_04_1.xlsx')
-workbook.SaveAs('/home/web/web/web-project/backend/processdata/data/test_excel/selldata_2023_08_04_1.xlsx')
+hr, workbook = workbooks.Open('/home/web/web/web-project/backend/processdata/data/test_excel/selldata_2023_08_10_1.xlsx')
+workbook.Save()
 workbook.Close()
 app.Quit()

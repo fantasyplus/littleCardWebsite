@@ -202,7 +202,7 @@ def writeJsonFile(json_name):
 
 
 if __name__ == "__main__":
-    file_name = "selldata_2023_08_04_1.xlsx"
+    file_name = "selldata_2023_08_10_1.xlsx"
 
     excel_data = readSellInfo(file_name)
 
