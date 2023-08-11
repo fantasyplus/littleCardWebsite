@@ -51,28 +51,19 @@ func TestDb(t *testing.T) {
 	processdata.InsertCardNoTable(db, person_id2card_ids2card_num, card_id2card_name, card_id2person_ids2status)
 }
 
+// 根据cn和qq查找谷子信息
 func TestFind(t *testing.T) {
 	db := processdata.ConnectDB()
-	processdata.FindCardInfoByCNQQ(db, "糖", "")
+	processdata.FindCardInfoByCNQQ(db, "银河", "")
 }
 
-func TestMergeMap(t *testing.T) {
-	db := processdata.ConnectDB()
-	processdata.CreateTable(db)
-	person_id2card_ids2card_num, _, _ := processdata.InsertPersonInfoTable(db)
-	for person_id, card_id2card_num := range person_id2card_ids2card_num {
-		if person_id == 20 {
-			processdata.MergeMap(card_id2card_num)
-		}
-	}
-}
-
-func TestRemoveDuplicates(t *testing.T) {
-	var temp []string = []string{"1", "2", "3", "3", "3", "6", "6", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"}
-	processdata.RemoveDuplicates(temp)
-}
-
+// 指定cn和qq更新status
 func TestUpdateStatusByCNQQ(t *testing.T) {
 	db := processdata.ConnectDB()
-	processdata.UpdateStatusByCNQQ(db, "银河", "", "什么鬼")
+	processdata.UpdateStatusByCNQQ(db, "银河", "", "none")
+}
+
+func TestGenerateExcel(t *testing.T) {
+	db :=processdata.ConnectDB()
+	processdata.GenerateSellExcel(db)
 }

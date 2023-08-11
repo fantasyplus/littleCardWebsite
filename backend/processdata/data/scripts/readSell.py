@@ -83,7 +83,7 @@ def readSellInfo(excel_name):
     p = path.dirname(__file__) + "/../test_excel/" + excel_name
     # 读取Excel文件
     wb = openpyxl.load_workbook(p,data_only=False)
-    sheet_names = wb.sheetnames
+    sheet_names = wb.sheetnames[4:]
     # sheet_names=[wb.sheetnames[16]]
     print(sheet_names)
 
@@ -206,4 +206,4 @@ if __name__ == "__main__":
 
     excel_data = readSellInfo(file_name)
 
-    # writeJsonFile("selldata.json")
+    writeJsonFile("selldata.json")

@@ -64,7 +64,7 @@ func InsertPersonInfoTable(db *gorm.DB) (
 	var person_id2card_ids2card_num = make(map[uint]([]map[string]float64))
 	// 谷子id和谷子名字的映射
 	var card_id2card_name = make(map[string]string)
-	// 当某个cn和qq对应的status有信息时，用卡片id存储结构体数组，每个元素包含person_id和status
+	// 当某个cn和qq对应的status有信息时，用card_id存储map数组，每个map包含person_id和status的映射
 	// 根据card_id查找cardNo表，根据person_id查找对应行，更新status
 	var card_id2person_ids2status = make(map[string][]map[uint]string)
 	var person_id uint
@@ -119,7 +119,7 @@ func InsertPersonInfoTable(db *gorm.DB) (
 				panic("failed to insert data: " + err.Error())
 			}
 
-			// 为每个card_id创建一个结构体数组，数组每个元素包含person_id和status
+			// 为每个card_id创建一个map数组，数组每个map包含person_id和status的映射
 			card_id2person_ids2status[card_id] = append(card_id2person_ids2status[card_id], map[uint]string{person_id: card_status})
 
 			// 创建新的嵌套card_id2card_num并插入数据，对应person_id
@@ -139,9 +139,8 @@ func InsertPersonInfoTable(db *gorm.DB) (
 func InsertCardIndexTable(
 	db *gorm.DB,
 	person_id2card_ids2card_num map[uint]([]map[string]float64)) {
-	for person_id, card_id2card_num := range person_id2card_ids2card_num {
-		// fmt.Println(person_id, card_id2card_num)
 
+	for person_id, card_id2card_num := range person_id2card_ids2card_num {
 		temp_ids := []string{}
 		for _, item := range card_id2card_num {
 			for card_id := range item {
@@ -149,9 +148,9 @@ func InsertCardIndexTable(
 			}
 		}
 
-		// fmt.Println(temp_ids)
+		//去重，把一张表里一个人买了多次的谷子数量合并成一条记录
+		temp_ids = RemoveDuplicates(temp_ids)
 		card_ids := strings.Join(temp_ids, ",")
-		// fmt.Println(card_ids)
 
 		//如果已经有数据，会自动更新；如果没有数据，会自动插入
 		//where查找，assign定义更新或插入的字段，firstorcreate执行更新或插入并返回结果
@@ -195,20 +194,38 @@ func InsertCardInfoTable(db *gorm.DB) {
 	}
 }
 
+//获取某个人对应的某个谷子的状态
+func getStatus(
+	card_id2person_ids2status map[string][]map[uint]string,
+	card_id string,
+	person_id uint) string {
+
+	for _, item := range card_id2person_ids2status[card_id] {
+		for key, status := range item {
+			if key == person_id {
+				// fmt.Printf("card_id:%s,person_id:%d, status:%s\n", card_id, person_id, status)
+				return status
+			}
+		}
+	}
+	return "none"
+}
+
 func InsertCardNoTable(
 	db *gorm.DB,
 	person_id2card_ids2card_num map[uint]([]map[string]float64),
 	card_id2card_name map[string]string,
 	card_id2person_ids2status map[string][]map[uint]string) {
+
 	for card_id := range card_id2card_name {
 		// Dynamically set the table name based on cardID
 		tableName := fmt.Sprintf("cardNo%s", card_id)
 
 		// Use TableName to set the table name for CardNo model
 		db.Table(tableName).AutoMigrate(&CardNo{})
-
 		// fmt.Printf("Created table %s\n", tableName)
 	}
+
 	// 根据每个person_id对应的card_id2card_num字典，插入或更新cardNo表
 	for person_id, card_id2card_num := range person_id2card_ids2card_num {
 		// 把相同card_id的card_num加起来
@@ -217,24 +234,13 @@ func InsertCardNoTable(
 		//得到一个人对应有多少个card_id，以及每个card_id对应的card_num
 		for _, item := range card_id2card_num {
 			for card_id := range item {
-				getStatus := func() string {
-					for _, item := range card_id2person_ids2status[card_id] {
-						for key, status := range item {
-							if key == person_id {
-								// fmt.Printf("card_id:%s,person_id:%d, status:%s\n", card_id, person_id, status)
-								return status
-							}
-						}
-					}
-					return "none"
-				}
 
 				var cardno CardNo = CardNo{
 					Model:    gorm.Model{},
 					PersonID: int(person_id),
 					CardName: card_id2card_name[card_id],
 					CardNum:  item[card_id],
-					Status:   getStatus(),
+					Status:   getStatus(card_id2person_ids2status,card_id,person_id),
 				}
 
 				tableName := fmt.Sprintf("cardNo%s", card_id)
@@ -265,9 +271,6 @@ func FindCardInfoByCNQQ(db *gorm.DB, cn, qq string) [][]interface{} {
 		var cardindex CardIndex
 		db.Where("person_id = ?", item.ID).Find(&cardindex)
 		card_ids := strings.Split(cardindex.CardIDs, ",")
-		//去重，在之前已经把一张表里一个人买了多次的谷子数量合并成一条记录了
-		//todo:可以在插入cardindex表的时候就去重
-		card_ids = RemoveDuplicates(card_ids)
 
 		fmt.Println("谷子总数:", len(card_ids))
 		for _, card_id := range card_ids {
@@ -330,10 +333,7 @@ func UpdateStatusByCNQQ(db *gorm.DB, cn, qq, status string) {
 		var cardindex CardIndex
 		db.Where("person_id = ?", item.ID).Find(&cardindex)
 		card_ids := strings.Split(cardindex.CardIDs, ",")
-		//去重，在之前已经把一张表里一个人买了多次的谷子数量合并成一条记录了
-		//todo:可以在插入cardindex表的时候就去重
-		card_ids = RemoveDuplicates(card_ids)
-		// fmt.Println(card_ids)
+
 		//根据card_id2card_status的信息更新card_ids的状态
 		for _, card_id := range card_ids {
 			//预处理，如果是一对多的情况，card_id为(19_1,1_1形式)，改成19,1
@@ -342,7 +342,7 @@ func UpdateStatusByCNQQ(db *gorm.DB, cn, qq, status string) {
 			if strings.Contains(query_card_id, "_") {
 				query_card_id = strings.Split(query_card_id, "_")[0]
 			}
-			
+
 			//如果这个谷子是已发货的，更新cardNo表的对应person_id的状态
 			if card_id2card_status[query_card_id] == "已到货" {
 				fmt.Printf("更新card_id:%s,person_id:%d的状态为:%s\n", card_id, item.ID, status)
@@ -376,8 +376,8 @@ func RemoveDuplicates(input []string) []string {
 	return uniqueSlice
 }
 
+// Helper map to merge values with the same key
 func MergeMap(card_id2card_num []map[string]float64) []map[string]float64 {
-	// Helper map to merge values with the same key
 	mergedMap := make(map[string]float64)
 
 	// Iterate through card_id2card_num slice and merge values with the same key
@@ -399,9 +399,6 @@ func MergeMap(card_id2card_num []map[string]float64) []map[string]float64 {
 	for key, value := range mergedMap {
 		mergedSlice = append(mergedSlice, map[string]float64{key: value})
 	}
-
-	// fmt.Println(mergedSlice)
-	// fmt.Println(len(mergedSlice))
 
 	return mergedSlice
 }
