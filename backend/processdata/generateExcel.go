@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
-	mapset "github.com/deckarep/golang-set"
 	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
 )
@@ -40,7 +40,7 @@ func SaveExcelFile(f *excelize.File) {
 }
 
 // 生成一个谷子对应一个角色的表格
-func GenerateSingleTypeSheet(db *gorm.DB, card_data []CardNo, full_name string, f *excelize.File) bool {
+func GenerateSingleTypeSheet(db *gorm.DB, card_data []CardNo, full_name string, f *excelize.File) {
 	//设置sheet名
 	f.NewSheet(full_name)
 
@@ -61,32 +61,34 @@ func GenerateSingleTypeSheet(db *gorm.DB, card_data []CardNo, full_name string, 
 		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("B%d", index+2), num)
 		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("C%d", index+2), status)
 	}
-
-	return false
 }
 
-func GetCharacterName(item [][]CardNo) mapset.Set {
-	character_list := mapset.NewSet()
+func GetCharacterName(item [][]CardNo) []string {
+	character_list := []string{}
 	for _, datas := range item {
 		for _, data := range datas {
 			//获取当前数据表对应的角色名
 			match := regexp.MustCompile(`-`).FindAllStringIndex(data.CardName, -1)
 			character_name := data.CardName[match[0][1]:]
-			character_list.Add(character_name)
+
+			//去重,判断角色名是否已经存在
+			if !strings.Contains(strings.Join(character_list, ","), character_name) {
+				character_list = append(character_list, character_name)
+			}
 		}
 	}
 	return character_list
 }
 
-func GetCharacterCell(character_list mapset.Set, card_name string, row int) string {
+func GetCharacterCell(character_list []string, card_name string, row int) string {
 	var cell_name string
 
 	match := regexp.MustCompile(`-`).FindAllStringIndex(card_name, -1)
 	character_name := card_name[match[0][1]:]
-	temp := character_list.ToSlice()
-	for index := range temp {
-		if temp[index] == character_name {
-			cell_name = fmt.Sprintf("%c%d", 'A'+index+1, row+2)
+
+	for index := range character_list {
+		if character_list[index] == character_name {
+			cell_name = fmt.Sprintf("%c%d", 'A'+index+1, row)
 			break
 		}
 	}
@@ -94,8 +96,55 @@ func GetCharacterCell(character_list mapset.Set, card_name string, row int) stri
 	return cell_name
 }
 
+func SetMultiTypeData(db *gorm.DB, item [][]CardNo, sheet_name string, character_list []string, f *excelize.File) {
+	//设置数据
+	is_personid_shown := map[int]string{}
+	//excel表数据部分的总行数,从第二行开始
+	total_row := 2
+	for _, datas := range item {
+		for _, data := range datas {
+			cn_qq := getCNQQ(db, data.PersonID)
+			num := data.CardNum
+			status := data.Status
+
+			var cell_name_character string
+			if is_personid_shown[data.PersonID] != "" {
+				//如果该person_id已经设置过cell_name，那么就直接用之前的cell_name
+				cell_name_character = is_personid_shown[data.PersonID]
+				//分离出之前的row，再重新通过角色名获得新的位置
+				match := regexp.MustCompile(`\d+`).FindStringSubmatch(cell_name_character)
+				old_row, _ := strconv.Atoi(match[0])
+				cell_name_character = GetCharacterCell(character_list, data.CardName, old_row)
+
+				//同时只需要设置数量就可以了，因为cnqq和状态已经设置过了
+				SetCellValueWithErrHandle(f, sheet_name, cell_name_character, num)
+
+				fmt.Println("two", data.CardName, cn_qq, cell_name_character, num)
+			} else {
+				//否则即为第一次设置该person_id的数据
+
+				//获得当前角色名对应的位置
+				cell_name_character = GetCharacterCell(character_list, data.CardName, total_row)
+				//设置cnqq
+				SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("A%d", total_row), cn_qq)
+				//设置数量
+				SetCellValueWithErrHandle(f, sheet_name, cell_name_character, num)
+				//设置状态
+				SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("%c%d", 'A'+len(character_list)+1, total_row), status)
+
+				fmt.Println("one", data.CardName, cn_qq, cell_name_character, num)
+
+				is_personid_shown[data.PersonID] = cell_name_character
+
+				//行数++
+				total_row++
+			}
+		}
+	}
+}
+
 // 生成一个谷子对应多个角色的表格
-func GenerateMultiTypeSheet(db *gorm.DB, multi_character_infos [][]interface{}, f *excelize.File) bool {
+func GenerateMultiTypeSheet(db *gorm.DB, multi_character_infos [][]interface{}, f *excelize.File) {
 	merged_data := map[string]([][]CardNo){}
 	full_name_map := map[string]string{}
 
@@ -120,60 +169,26 @@ func GenerateMultiTypeSheet(db *gorm.DB, multi_character_infos [][]interface{}, 
 		//存放某一种谷子的所有角色名
 		character_list := GetCharacterName(item)
 
+		sheet_name := full_name_map[card_id]
 		//设置sheet名
-		f.NewSheet(full_name_map[card_id])
+		f.NewSheet(sheet_name)
+		f.SetColWidth(sheet_name, "A", "A", 30)
 
 		//设置表头
-		SetCellValueWithErrHandle(f, full_name_map[card_id], "A1", full_name_map[card_id])
+		SetCellValueWithErrHandle(f, sheet_name, "A1", sheet_name)
 
 		//设置角色名（数量列表头）
-		for index, character_name := range character_list.ToSlice() {
+		for index, character_name := range character_list {
 			cell_name := fmt.Sprintf("%c1", 'A'+index+1)
-			SetCellValueWithErrHandle(f, full_name_map[card_id], cell_name, character_name)
+			SetCellValueWithErrHandle(f, sheet_name, cell_name, character_name)
 		}
 
 		//状态列表头
-		SetCellValueWithErrHandle(f, full_name_map[card_id], fmt.Sprintf("%c1", 'A'+character_list.Cardinality()+1), "状态")
+		SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("%c1", 'A'+len(character_list)+1), "状态")
 
-		//设置数据
-		is_personid_shown := map[int]string{}
-		for _, datas := range item {
-			for row, data := range datas {
-				cn_qq := getCNQQ(db, data.PersonID)
-				num := data.CardNum
-				status := data.Status
-
-				var cell_name_character string
-				if is_personid_shown[data.PersonID] != "" {
-					//如果该person_id已经设置过cell_name，那么就直接用之前的cell_name
-					cell_name_character = is_personid_shown[data.PersonID]
-					
-					//同时只需要设置数量就可以了，因为cnqq和状态已经设置过了
-					SetCellValueWithErrHandle(f, full_name_map[card_id], cell_name_character, num)
-
-					// fmt.Println(data.CardName,cn_qq,cell_name_character)
-				} else {
-					//否则即为第一次设置该person_id的数据
-
-					//获得当前角色名对应的位置
-					cell_name_character = GetCharacterCell(character_list, data.CardName, row)
-					//设置cnqq
-					SetCellValueWithErrHandle(f, full_name_map[card_id], fmt.Sprintf("A%d", row+2), cn_qq)
-					//设置数量
-					SetCellValueWithErrHandle(f, full_name_map[card_id], cell_name_character, num)
-					//设置状态
-					SetCellValueWithErrHandle(f, full_name_map[card_id], fmt.Sprintf("%c%d", 'A'+character_list.Cardinality()+1, row+2), status)
-
-					fmt.Println(data.CardName,cn_qq,cell_name_character)
-				}
-
-
-				is_personid_shown[data.PersonID] = cell_name_character
-			}
-		}
+		//设置数据部分
+		SetMultiTypeData(db, item, sheet_name, character_list, f)
 	}
-
-	return false
 }
 
 //思路：
