@@ -29,11 +29,6 @@ func CreateTable(db *gorm.DB) {
 	db.AutoMigrate(&PersonInfo{}, &CardInfo{}, &CardIndex{})
 }
 
-func DelteTable(db *gorm.DB) {
-	// 使用Migrator对象删除表
-	db.Migrator().DropTable(&PersonInfo{}, &CardInfo{}, &CardIndex{})
-}
-
 func InsertPersonInfoTable(db *gorm.DB) (
 	map[uint]([]map[string]float64),
 	map[string]string,

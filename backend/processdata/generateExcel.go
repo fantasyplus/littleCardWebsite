@@ -2,83 +2,177 @@ package processdata
 
 import (
 	"fmt"
-	"log"
+	"os"
 	"regexp"
 	"strings"
 
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
-
-	_ "github.com/go-sql-driver/mysql"
+	mapset "github.com/deckarep/golang-set"
 	"github.com/xuri/excelize/v2"
+	"gorm.io/gorm"
 )
 
-type User struct {
-	ID      string
-	Name    string
-	State   string
-	City    string
-	Address string
+func getCNQQ(db *gorm.DB, person_id int) string {
+	var person_info PersonInfo
+	db.Where("id = ?", person_id).Find(&person_info)
+	prefix := "cn+群内qq:"
+	return prefix + person_info.CN + person_info.QQ
 }
 
-func GenerateExcelTest() {
-	// 连接到 MySQL 数据库
-	dsn := "root:yxdbc2008@tcp(127.0.0.1:3306)/test?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		NamingStrategy: schema.NamingStrategy{
-			SingularTable: true,
-		},
-	})
+func SetCellValueWithErrHandle(f *excelize.File, sheet_name string, cell_name string, value interface{}) {
+	err := f.SetCellValue(sheet_name, cell_name, value)
 	if err != nil {
-		panic("failed to connect database")
+		fmt.Println(sheet_name, cell_name, err)
 	}
-
-	// 查询数据
-	var people []User
-	db.Find(&people)
-
-	// 创建一个新的 Excel 文件
-	f := excelize.NewFile()
-	f.NewSheet("Sheet1")
-
-	// 写入表头
-	f.SetCellValue("Sheet1", "A1", "ID")
-	f.SetCellValue("Sheet1", "B1", "Name")
-	f.SetCellValue("Sheet1", "C1", "State")
-	f.SetCellValue("Sheet1", "D1", "City")
-	f.SetCellValue("Sheet1", "E1", "Address")
-
-	// 从数据库读取数据，并将数据写入 Excel 表格
-	for i, person := range people {
-		row := i + 2
-		f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), person.ID)
-		f.SetCellValue("Sheet1", fmt.Sprintf("B%d", row), person.Name)
-		f.SetCellValue("Sheet1", fmt.Sprintf("C%d", row), person.State)
-		f.SetCellValue("Sheet1", fmt.Sprintf("D%d", row), person.City)
-		f.SetCellValue("Sheet1", fmt.Sprintf("E%d", row), person.Address)
-	}
-
-	// 将数据保存到 Excel 文件
-	err = f.SaveAs("output.xlsx")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("Excel 文件生成成功！")
 }
 
-//生成一个谷子对应一个角色的表格
-func GenerateSingleTypeSheet(card_data CardNo, full_name string, f *excelize.File) bool {
+// 保存文件
+func SaveExcelFile(f *excelize.File) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		fmt.Println("generate excel error when save,", err)
+	}
+
+	var savePath = currentDir + "/./data/output/test.xlsx"
+	save_err := f.SaveAs(savePath)
+	if save_err != nil {
+		fmt.Println(save_err)
+	}
+}
+
+// 生成一个谷子对应一个角色的表格
+func GenerateSingleTypeSheet(db *gorm.DB, card_data []CardNo, full_name string, f *excelize.File) bool {
 	//设置sheet名
 	f.NewSheet(full_name)
 
-	f.SetCellValue(full_name, "A1", full_name)
-	f.SetCellValue(full_name, "B1", "数量")
+	//设置表头
+	SetCellValueWithErrHandle(f, full_name, "A1", full_name)
+	//数量列表头
+	SetCellValueWithErrHandle(f, full_name, "B1", "数量")
+	//状态列表头
+	SetCellValueWithErrHandle(f, full_name, "C1", "状态")
+
+	//设置数据
+	for index, data := range card_data {
+		cn_qq := getCNQQ(db, data.PersonID)
+		num := data.CardNum
+		status := data.Status
+
+		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("A%d", index+2), cn_qq)
+		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("B%d", index+2), num)
+		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("C%d", index+2), status)
+	}
+
+	return false
+}
+
+func GetCharacterName(item [][]CardNo) mapset.Set {
+	character_list := mapset.NewSet()
+	for _, datas := range item {
+		for _, data := range datas {
+			//获取当前数据表对应的角色名
+			match := regexp.MustCompile(`-`).FindAllStringIndex(data.CardName, -1)
+			character_name := data.CardName[match[0][1]:]
+			character_list.Add(character_name)
+		}
+	}
+	return character_list
+}
+
+func GetCharacterCell(character_list mapset.Set, card_name string, row int) string {
+	var cell_name string
+
+	match := regexp.MustCompile(`-`).FindAllStringIndex(card_name, -1)
+	character_name := card_name[match[0][1]:]
+	temp := character_list.ToSlice()
+	for index := range temp {
+		if temp[index] == character_name {
+			cell_name = fmt.Sprintf("%c%d", 'A'+index+1, row+2)
+			break
+		}
+	}
+
+	return cell_name
+}
+
+// 生成一个谷子对应多个角色的表格
+func GenerateMultiTypeSheet(db *gorm.DB, multi_character_infos [][]interface{}, f *excelize.File) bool {
+	merged_data := map[string]([][]CardNo){}
+	full_name_map := map[string]string{}
+
+	for _, datas := range multi_character_infos {
+		card_data := datas[0].([]CardNo)
+		full_card_name := datas[1].(string)
+
+		//把同属一个谷子的角色数据放在一起（比如下午茶甜点的三种，合并到一起）
+		//这样merged_data中每个card_id对应的数据就是同一个谷子的所有角色数据
+		match1 := regexp.MustCompile(`\d+`).FindStringSubmatch(full_card_name)
+		merged_data[match1[0]] = append(merged_data[match1[0]], card_data)
+
+		//获取纯粹的谷子名，去除角色名
+		match2 := regexp.MustCompile(`-`).FindAllStringIndex(full_card_name, -1)
+		//保存谷子的全名（包括序号,不包括角色名）
+		full_card_name = full_card_name[:match2[0][0]]
+		full_name_map[match1[0]] = full_card_name
+	}
+
+	//开始生成excel
+	for card_id, item := range merged_data {
+		//存放某一种谷子的所有角色名
+		character_list := GetCharacterName(item)
+
+		//设置sheet名
+		f.NewSheet(full_name_map[card_id])
+
+		//设置表头
+		SetCellValueWithErrHandle(f, full_name_map[card_id], "A1", full_name_map[card_id])
+
+		//设置角色名（数量列表头）
+		for index, character_name := range character_list.ToSlice() {
+			cell_name := fmt.Sprintf("%c1", 'A'+index+1)
+			SetCellValueWithErrHandle(f, full_name_map[card_id], cell_name, character_name)
+		}
+
+		//状态列表头
+		SetCellValueWithErrHandle(f, full_name_map[card_id], fmt.Sprintf("%c1", 'A'+character_list.Cardinality()+1), "状态")
+
+		//设置数据
+		is_personid_shown := map[int]string{}
+		for _, datas := range item {
+			for row, data := range datas {
+				cn_qq := getCNQQ(db, data.PersonID)
+				num := data.CardNum
+				status := data.Status
+
+				var cell_name_character string
+				if is_personid_shown[data.PersonID] != "" {
+					//如果该person_id已经设置过cell_name，那么就直接用之前的cell_name
+					cell_name_character = is_personid_shown[data.PersonID]
+					
+					//同时只需要设置数量就可以了，因为cnqq和状态已经设置过了
+					SetCellValueWithErrHandle(f, full_name_map[card_id], cell_name_character, num)
+
+					// fmt.Println(data.CardName,cn_qq,cell_name_character)
+				} else {
+					//否则即为第一次设置该person_id的数据
+
+					//获得当前角色名对应的位置
+					cell_name_character = GetCharacterCell(character_list, data.CardName, row)
+					//设置cnqq
+					SetCellValueWithErrHandle(f, full_name_map[card_id], fmt.Sprintf("A%d", row+2), cn_qq)
+					//设置数量
+					SetCellValueWithErrHandle(f, full_name_map[card_id], cell_name_character, num)
+					//设置状态
+					SetCellValueWithErrHandle(f, full_name_map[card_id], fmt.Sprintf("%c%d", 'A'+character_list.Cardinality()+1, row+2), status)
+
+					fmt.Println(data.CardName,cn_qq,cell_name_character)
+				}
 
 
+				is_personid_shown[data.PersonID] = cell_name_character
+			}
+		}
+	}
 
-	// f.SaveAs()
 	return false
 }
 
@@ -97,25 +191,31 @@ func GenerateSellExcel(db *gorm.DB) {
 	tableNames, _ = db.Migrator().GetTables()
 
 	//一个谷子多个角色对应,每一组包含谷子全名和cardno数据
-	multi_character_infos := []interface{}{}
+	multi_character_infos := [][]interface{}{}
 
 	for _, tableName := range tableNames {
 		if strings.Contains(tableName, "cardNo") {
-			var cardno CardNo
+			var cardno []CardNo
 			db.Table(tableName).Find(&cardno)
 
 			//保存谷子的全名（包括序号）
 			card_id := regexp.MustCompile(`\d+`).FindStringSubmatch(tableName)
-			var full_card_name string = card_id[0] + cardno.CardName
+			var full_card_name string = card_id[0] + cardno[0].CardName
 
 			//如果是一个谷子多个角色的情况，先存下来，之后单独处理
 			if strings.Contains(tableName, "_") {
-				multi_character_infos = append(multi_character_infos, cardno, full_card_name)
+				multi_character_infos = append(multi_character_infos, []interface{}{cardno, full_card_name})
+				continue
 			}
 
 			//处理正常的情况（一对一）
-			GenerateSingleTypeSheet(cardno,full_card_name,f)
+			// GenerateSingleTypeSheet(db, cardno, full_card_name, f)
 		}
 	}
 
+	//处理一个谷子多个角色的情况
+	GenerateMultiTypeSheet(db, multi_character_infos, f)
+
+	//保存文件
+	SaveExcelFile(f)
 }

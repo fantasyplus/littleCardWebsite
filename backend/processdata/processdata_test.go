@@ -3,6 +3,7 @@ package processdata_test
 import (
 	"backend/processdata"
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -38,10 +39,7 @@ func TestSellData(t *testing.T) {
 	}
 }
 
-func TestDelData(t *testing.T) {
-	db := processdata.ConnectDB()
-	processdata.DelteTable(db)
-}
+//更新数据库
 func TestDb(t *testing.T) {
 	db := processdata.ConnectDB()
 	processdata.CreateTable(db)
@@ -66,4 +64,14 @@ func TestUpdateStatusByCNQQ(t *testing.T) {
 func TestGenerateExcel(t *testing.T) {
 	db :=processdata.ConnectDB()
 	processdata.GenerateSellExcel(db)
+}
+
+func TestLQBZ(t *testing.T){
+	currentDir, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	fmt.Println("Current directory:", currentDir)
 }
