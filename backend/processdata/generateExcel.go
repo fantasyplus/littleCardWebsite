@@ -11,6 +11,12 @@ import (
 	"gorm.io/gorm"
 )
 
+type SheetInfo struct {
+	Name  string
+	Index int
+	No    int
+}
+
 func getCNQQ(db *gorm.DB, person_id int) string {
 	var person_info PersonInfo
 	db.Where("id = ?", person_id).Find(&person_info)
@@ -25,8 +31,105 @@ func SetCellValueWithErrHandle(f *excelize.File, sheet_name string, cell_name st
 	}
 }
 
+// 等价于source=target，用于Sheet的覆盖
+func CoverSheet(f *excelize.File, target *SheetInfo, source *SheetInfo) {
+	if target == nil || source == nil {
+		if target == nil {
+			fmt.Println("target nil")
+		}
+		if source == nil {
+			fmt.Println("source nil")
+		}
+		return
+	}
+
+	fmt.Println("sourceIndex:", source.Index, "name:", source.Name, source.No)
+	fmt.Println("targetIndex:", target.Index, "name:", target.Name, target.No)
+
+	if source.Index != target.Index {
+		err1 := f.DeleteSheet(target.Name)
+		if err1 != nil {
+			fmt.Println("DeleteSheet", target.Name, err1)
+		}
+
+
+		err2 := f.CopySheet(source.Index, target.Index)
+		if err2 != nil {
+			fmt.Println("CopySheet", source.Name, target.Name, err2)
+		}
+
+		err3 := f.SetSheetName(source.Name, target.Name)
+		if err3 != nil {
+			fmt.Println("SetSheetName", source.Name, target.Name, err3)
+		}
+	}
+
+	*target = *source
+}
+
+func Partition(f *excelize.File, sheet_infos []SheetInfo, left, right int) int {
+	temp := &sheet_infos[left]
+	for left < right {
+		for left < right && sheet_infos[right].No > temp.No {
+			right--
+		}
+		// sheet_infos[left] = sheet_infos[right]
+		// fmt.Println("right--", "left:", left, "right:", right)
+		CoverSheet(f, &sheet_infos[left], &sheet_infos[right])
+		for left < right && sheet_infos[left].No <= temp.No {
+			left++
+		}
+		// sheet_infos[right] = sheet_infos[left]
+		// fmt.Println("left++", "left:", left, "right:", right)
+		CoverSheet(f, &sheet_infos[right], &sheet_infos[left])
+	}
+	// sheet_infos[left] = temp
+	// fmt.Println("left:", left, "right:", right)
+	CoverSheet(f, &sheet_infos[left], temp)
+	return left
+}
+
+func QuickSort(f *excelize.File, sheet_infos []SheetInfo, left, right int) {
+	if left > right {
+		return
+	}
+
+	pos := Partition(f, sheet_infos, left, right)
+
+	QuickSort(f, sheet_infos, left, pos-1)
+	QuickSort(f, sheet_infos, pos+1, right)
+}
+
+func SortSheetByNo(f *excelize.File) {
+	sheets := f.GetSheetList()
+
+	fmt.Println(len(sheets))
+
+	// Collect sheet info
+	var sheet_info_list []SheetInfo
+	for index := range sheets {
+		sheet_name := f.GetSheetName(index)
+		sheet_index, _ := f.GetSheetIndex(sheet_name)
+		match := regexp.MustCompile(`\d+`).FindStringSubmatch(sheet_name)[0]
+		card_id, _ := strconv.Atoi(match)
+
+		sheet_info_list = append(sheet_info_list, SheetInfo{Name: sheet_name, Index: sheet_index, No: card_id})
+	}
+	fmt.Println(sheet_info_list)
+
+	QuickSort(f, sheet_info_list, 0, len(sheet_info_list)-1)
+
+	fmt.Println(sheet_info_list)
+}
+
 // 保存文件
 func SaveExcelFile(f *excelize.File) {
+	//删除默认的Sheet1
+	f.DeleteSheet("Sheet1")
+
+	//给子表按序号排序
+	SortSheetByNo(f)
+
 	currentDir, err := os.Getwd()
 	if err != nil {
 		fmt.Println("generate excel error when save,", err)
@@ -43,6 +146,7 @@ func SaveExcelFile(f *excelize.File) {
 func GenerateSingleTypeSheet(db *gorm.DB, card_data []CardNo, full_name string, f *excelize.File) {
 	//设置sheet名
 	f.NewSheet(full_name)
+	f.SetColWidth(full_name, "A", "A", 30)
 
 	//设置表头
 	SetCellValueWithErrHandle(f, full_name, "A1", full_name)
@@ -97,7 +201,6 @@ func GetCharacterCell(character_list []string, card_name string, row int) string
 }
 
 func SetMultiTypeData(db *gorm.DB, item [][]CardNo, sheet_name string, character_list []string, f *excelize.File) {
-	//设置数据
 	is_personid_shown := map[int]string{}
 	//excel表数据部分的总行数,从第二行开始
 	total_row := 2
@@ -116,10 +219,10 @@ func SetMultiTypeData(db *gorm.DB, item [][]CardNo, sheet_name string, character
 				old_row, _ := strconv.Atoi(match[0])
 				cell_name_character = GetCharacterCell(character_list, data.CardName, old_row)
 
-				//同时只需要设置数量就可以了，因为cnqq和状态已经设置过了
+				//只需要设置数量就可以了，因为cnqq和状态已经设置过了
 				SetCellValueWithErrHandle(f, sheet_name, cell_name_character, num)
 
-				fmt.Println("two", data.CardName, cn_qq, cell_name_character, num)
+				// fmt.Println("two", data.CardName, cn_qq, cell_name_character, num)
 			} else {
 				//否则即为第一次设置该person_id的数据
 
@@ -132,7 +235,7 @@ func SetMultiTypeData(db *gorm.DB, item [][]CardNo, sheet_name string, character
 				//设置状态
 				SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("%c%d", 'A'+len(character_list)+1, total_row), status)
 
-				fmt.Println("one", data.CardName, cn_qq, cell_name_character, num)
+				// fmt.Println("one", data.CardName, cn_qq, cell_name_character, num)
 
 				is_personid_shown[data.PersonID] = cell_name_character
 
@@ -224,7 +327,7 @@ func GenerateSellExcel(db *gorm.DB) {
 			}
 
 			//处理正常的情况（一对一）
-			// GenerateSingleTypeSheet(db, cardno, full_card_name, f)
+			GenerateSingleTypeSheet(db, cardno, full_card_name, f)
 		}
 	}
 
