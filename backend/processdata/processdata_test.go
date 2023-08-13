@@ -3,7 +3,6 @@ package processdata_test
 import (
 	"backend/processdata"
 	"fmt"
-	"os"
 	"testing"
 )
 
@@ -67,11 +66,5 @@ func TestGenerateExcel(t *testing.T) {
 }
 
 func TestLQBZ(t *testing.T){
-	currentDir, err := os.Getwd()
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-
-	fmt.Println("Current directory:", currentDir)
+	processdata.ExeSortSheet()
 }
