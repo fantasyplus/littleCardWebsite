@@ -64,7 +64,3 @@ func TestGenerateExcel(t *testing.T) {
 	db :=processdata.ConnectDB()
 	processdata.GenerateSellExcel(db)
 }
-
-func TestLQBZ(t *testing.T){
-	processdata.ExeSortSheet()
-}

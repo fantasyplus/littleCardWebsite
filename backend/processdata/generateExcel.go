@@ -31,46 +31,40 @@ func SetCellValueWithErrHandle(f *excelize.File, sheet_name string, cell_name st
 	}
 }
 
-// 等价于source=target，用于Sheet的覆盖
-func CoverSheetInterface(f *excelize.File, source *SheetInfo, target *SheetInfo) {
-	if source.Index != target.Index {
-		CoverSheet(f, source.Name, target.Name)
-	}
+// 交换source和target
+func SwapSheet(f *excelize.File, source_name string, target_name string) {
+	source_index, _ := f.GetSheetIndex(source_name)
+	target_index, _ := f.GetSheetIndex(target_name)
 
-	*source = *target
+	// 交换sheet内容
+	f.NewSheet("temp_data")
+	index_temp_data, _ := f.GetSheetIndex("temp_data")
+	f.CopySheet(target_index, index_temp_data)
+	f.CopySheet(source_index, target_index)
+	f.CopySheet(index_temp_data, source_index)
+	f.DeleteSheet("temp_data")
+
+	// 交换sheet名
+	f.SetSheetName(target_name, "temp_name")
+	f.SetSheetName(source_name, target_name)
+	f.SetSheetName("temp_name", source_name)
 }
 
-func Partition(f *excelize.File, sheet_infos []SheetInfo, left, right int) int {
-	temp := sheet_infos[left]
-	for left < right {
-		for left < right && sheet_infos[right].No > temp.No {
-			right--
+func BubbleSort(f *excelize.File, sheet_info_list []SheetInfo) {
+	for i := 0; i < len(sheet_info_list)-1; i++ {
+		is_swap := false
+		for j := 0; j < len(sheet_info_list)-i-1; j++ {
+			if sheet_info_list[j].No > sheet_info_list[j+1].No {
+				SwapSheet(f, sheet_info_list[j].Name, sheet_info_list[j+1].Name)
+				sheet_info_list[j], sheet_info_list[j+1] = sheet_info_list[j+1], sheet_info_list[j]
+
+				is_swap = true
+			}
 		}
-		// fmt.Println("right--", "left:", left, "right:", right)
-		CoverSheetInterface(f, &sheet_infos[left], &sheet_infos[right])
-		for left < right && sheet_infos[left].No <= temp.No {
-			left++
+		if !is_swap {
+			break
 		}
-		// fmt.Println("left++", "left:", left, "right:", right)
-		CoverSheetInterface(f, &sheet_infos[right], &sheet_infos[left])
 	}
-	// fmt.Println("left:", left, "right:", right)
-	CoverSheetInterface(f, &sheet_infos[left], &temp)
-	return left
-}
-
-func QuickSort(f *excelize.File, sheet_infos []SheetInfo, left, right int) {
-	if left > right {
-		return
-	}
-
-	pos := Partition(f, sheet_infos, left, right)
-
-	// fmt.Println("pos:", pos)
-	// fmt.Println(sheet_infos)
-
-	QuickSort(f, sheet_infos, left, pos-1)
-	QuickSort(f, sheet_infos, pos+1, right)
 }
 
 func SortSheetByNo(f *excelize.File) {
@@ -90,7 +84,7 @@ func SortSheetByNo(f *excelize.File) {
 	}
 	// fmt.Println(sheet_info_list)
 
-	QuickSort(f, sheet_info_list, 0, len(sheet_info_list)-1)
+	BubbleSort(f, sheet_info_list)
 
 	fmt.Println(sheet_info_list)
 }
