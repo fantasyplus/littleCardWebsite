@@ -10,6 +10,15 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+func UpdateDataBase(){
+	db := ConnectDB()
+	CreateTable(db)
+	person_id2card_ids2card_num, card_id2card_name, card_id2person_ids2status := InsertPersonInfoTable(db)
+	InsertCardIndexTable(db, person_id2card_ids2card_num)
+	InsertCardInfoTable(db)
+	InsertCardNoTable(db, person_id2card_ids2card_num, card_id2card_name, card_id2person_ids2status)
+}
+
 func ConnectDB() *gorm.DB {
 	dsn := "root:yxdbc2008@tcp(127.0.0.1:3306)/non_commercial_test?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
@@ -339,7 +348,7 @@ func UpdateStatusByCNQQ(db *gorm.DB, cn, qq, status string) {
 			}
 
 			//如果这个谷子是已发货的，更新cardNo表的对应person_id的状态
-			if card_id2card_status[query_card_id] == "已到货" {
+			if card_id2card_status[query_card_id] != "none" {
 				fmt.Printf("更新card_id:%s,person_id:%d的状态为:%s\n", card_id, item.ID, status)
 
 				tableName := fmt.Sprintf("cardNo%s", card_id)

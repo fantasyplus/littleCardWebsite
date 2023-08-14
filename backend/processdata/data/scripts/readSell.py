@@ -79,13 +79,13 @@ def processRow(row, single_sheet_data):
     single_sheet_data.append(row_data)
 
 
-def readSellInfo(excel_name):
-    p = path.dirname(__file__) + "/../test_excel/" + excel_name
+def readSellInfo(path):
+    # p = path.dirname(__file__) + "/../test_excel/" + excel_name
     # 读取Excel文件
-    wb = openpyxl.load_workbook(p,data_only=False)
+    wb = openpyxl.load_workbook(path,data_only=False)
     sheet_names = wb.sheetnames[4:]
     # sheet_names=[wb.sheetnames[16]]
-    print(sheet_names)
+    # print(sheet_names)
 
     # 一个表格的所有谷子信息
     # 每一个元素对应一种谷子的信息
@@ -163,7 +163,7 @@ def readSellInfo(excel_name):
     return sheetdatas
 
 
-def writeJsonFile(json_name):
+def writeJsonFile(json_name,excel_data):
     # 分割每个谷子的数据，然后存入字典
     split_points = []
     for i in range(len(excel_data)):
@@ -200,6 +200,9 @@ def writeJsonFile(json_name):
     with open(p, "w", encoding="utf-8") as json_file:
         json.dump(dict_data, json_file, ensure_ascii=False, indent=4)
 
+def ReadSell(file_path):
+    excel_data = readSellInfo(file_path)
+    writeJsonFile("selldata.json",excel_data) 
 
 if __name__ == "__main__":
     file_name = "selldata_2023_08_10_1.xlsx"

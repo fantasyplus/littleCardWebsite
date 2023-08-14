@@ -38,14 +38,9 @@ func TestSellData(t *testing.T) {
 	}
 }
 
-//更新数据库
+// 更新数据库
 func TestDb(t *testing.T) {
-	db := processdata.ConnectDB()
-	processdata.CreateTable(db)
-	person_id2card_ids2card_num, card_id2card_name, card_id2person_ids2status := processdata.InsertPersonInfoTable(db)
-	processdata.InsertCardIndexTable(db, person_id2card_ids2card_num)
-	processdata.InsertCardInfoTable(db)
-	processdata.InsertCardNoTable(db, person_id2card_ids2card_num, card_id2card_name, card_id2person_ids2status)
+	processdata.UpdateDataBase()
 }
 
 // 根据cn和qq查找谷子信息
@@ -61,6 +56,19 @@ func TestUpdateStatusByCNQQ(t *testing.T) {
 }
 
 func TestGenerateExcel(t *testing.T) {
-	db :=processdata.ConnectDB()
-	processdata.GenerateSellExcel(db)
+	db := processdata.ConnectDB()
+	processdata.GenerateSellExcel(db, "/home/web/web/web-project/backend/processdata/data/test_excel/selldata/selldata_2023_08_14_23.xlsx")
+}
+
+func TestLqbz(t *testing.T) {
+	db := processdata.ConnectDB()
+
+	//执行python脚本，从网站下载数据并读取数据
+	_, sell_data_path := processdata.ExecPythonScript("DownloadAndRead.py")
+ 
+	//根据excel文件更新数据库
+	processdata.UpdateDataBase()
+
+	//在这之前要更新数据库
+	processdata.GenerateSellExcel(db, sell_data_path)
 }

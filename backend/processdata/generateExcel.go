@@ -3,6 +3,7 @@ package processdata
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -31,6 +32,71 @@ func SetCellValueWithErrHandle(f *excelize.File, sheet_name string, cell_name st
 	}
 }
 
+func SetCellStyle(src_f *excelize.File, dest_f *excelize.File, sheet_name string, row_index int, col_index int) {
+	// 获取源Sheet中单元格的样式
+	style, err := src_f.GetCellStyle(sheet_name, fmt.Sprintf("%c%d", 'A'+col_index, row_index+1))
+	if err != nil {
+		fmt.Println("Error getting source cell style:", err)
+		return
+	}
+	dest_f.SetCellStyle(sheet_name, fmt.Sprintf("%c%d", 'A'+col_index, row_index+1), fmt.Sprintf("%c%d", 'A'+col_index, row_index+1), style)
+
+	// 获取源Sheet中单元格的宽度
+	width, err := src_f.GetColWidth(sheet_name, fmt.Sprintf("%c", 'A'+col_index))
+	if err != nil {
+		fmt.Println("Error getting source column width:", err)
+		return
+	}
+	dest_f.SetColWidth(sheet_name, fmt.Sprintf("%c", 'A'+col_index), fmt.Sprintf("%c", 'A'+col_index), width)
+
+	// 获取源Sheet中单元格的高度
+	height, err := src_f.GetRowHeight(sheet_name, row_index+1)
+	if err != nil {
+		fmt.Println("Error getting source row height:", err)
+		return
+	}
+	dest_f.SetRowHeight(sheet_name, row_index+1, height)
+}
+
+func MoveSheetFromOriginExcel(src_path string, dest_f *excelize.File, sheet_num int) {
+	// 打开源Excel文件
+	src_f, err := excelize.OpenFile(src_path)
+	if err != nil {
+		fmt.Println("Error opening the source file:", err)
+		return
+	}
+
+	copy_sheets := src_f.GetSheetList()
+	// fmt.Println(copy_sheets)
+
+	for _, sheet_name := range copy_sheets[:sheet_num] {
+
+		// 从源Excel文件中读取源Sheet的内容
+		srcRows, err := src_f.GetRows(sheet_name)
+		if err != nil {
+			fmt.Println("Error reading source sheet:", err)
+			return
+		}
+
+		// 在目标Excel文件中创建一个新的Sheet
+		dest_f.NewSheet(sheet_name)
+
+		// 将源Sheet的内容复制到目标Sheet
+		for row_index, srcRow := range srcRows {
+			for col_index, cellValue := range srcRow {
+				err := dest_f.SetCellValue(sheet_name, fmt.Sprintf("%c%d", 'A'+col_index, row_index+1), cellValue)
+				if err != nil {
+					fmt.Println("Error setting destination cell value:", err)
+				}
+
+				SetCellStyle(src_f, dest_f, sheet_name, row_index, col_index)
+			}
+		}
+	}
+
+	// fmt.Println("Sheet copied successfully!")
+}
+
 // 交换source和target
 func SwapSheet(f *excelize.File, source_name string, target_name string) {
 	source_index, _ := f.GetSheetIndex(source_name)
@@ -50,6 +116,7 @@ func SwapSheet(f *excelize.File, source_name string, target_name string) {
 	f.SetSheetName("temp_name", source_name)
 }
 
+// 因为excelize的sheet的index的问题，只能用操作数组本身的排序算法
 func BubbleSort(f *excelize.File, sheet_info_list []SheetInfo) {
 	for i := 0; i < len(sheet_info_list)-1; i++ {
 		is_swap := false
@@ -67,15 +134,13 @@ func BubbleSort(f *excelize.File, sheet_info_list []SheetInfo) {
 	}
 }
 
-func SortSheetByNo(f *excelize.File) {
+func SortSheetByNo(f *excelize.File, start_sheet int) {
 	sheets := f.GetSheetList()
 
-	fmt.Println(len(sheets))
-
-	// Collect sheet info
+	//获取所有子表的信息
 	var sheet_info_list []SheetInfo
-	for index := range sheets {
-		sheet_name := f.GetSheetName(index)
+	for _, sheet_name := range sheets[start_sheet:] {
+		// sheet_name := f.GetSheetName(index)
 		sheet_index, _ := f.GetSheetIndex(sheet_name)
 		match := regexp.MustCompile(`\d+`).FindStringSubmatch(sheet_name)[0]
 		card_id, _ := strconv.Atoi(match)
@@ -86,23 +151,22 @@ func SortSheetByNo(f *excelize.File) {
 
 	BubbleSort(f, sheet_info_list)
 
-	fmt.Println(sheet_info_list)
+	// fmt.Println(sheet_info_list)
 }
 
 // 保存文件
-func SaveExcelFile(f *excelize.File) {
+func SaveExcelFile(f *excelize.File,origin_name string) {
 	//删除默认的Sheet1
 	f.DeleteSheet("Sheet1")
 
 	//给子表按序号排序
-	SortSheetByNo(f)
+	SortSheetByNo(f, 4)
 
-	currentDir, err := os.Getwd()
-	if err != nil {
-		fmt.Println("generate excel error when save,", err)
-	}
+	save_name := filepath.Base(origin_name)
+	save_name = strings.Replace(save_name, ".xlsx", "_generated.xlsx", 1)
 
-	var savePath = currentDir + "/./data/output/test.xlsx"
+	cur_dir, _ := os.Getwd()
+	var savePath = cur_dir + "/./data/output/" + save_name
 	save_err := f.SaveAs(savePath)
 	if save_err != nil {
 		fmt.Println(save_err)
@@ -151,6 +215,7 @@ func GetCharacterName(item [][]CardNo) []string {
 	return character_list
 }
 
+// 获取对应角色的单元格名（一对多的情况）
 func GetCharacterCell(character_list []string, card_name string, row int) string {
 	var cell_name string
 
@@ -167,6 +232,7 @@ func GetCharacterCell(character_list []string, card_name string, row int) string
 	return cell_name
 }
 
+// 设置多个角色的数据
 func SetMultiTypeData(db *gorm.DB, item [][]CardNo, sheet_name string, character_list []string, f *excelize.File) {
 	is_personid_shown := map[int]string{}
 	//excel表数据部分的总行数,从第二行开始
@@ -267,17 +333,19 @@ func GenerateMultiTypeSheet(db *gorm.DB, multi_character_infos [][]interface{}, 
 2.第一列的“cn+群内qq:行时2986454288”，可以通过person_id查找到person_info表，得到cn和qq
 3.数量和状态列就直接读取
 */
-func GenerateSellExcel(db *gorm.DB) {
+func GenerateSellExcel(db *gorm.DB,origin_sell_data_path string) {
 
 	// 创建一个新的 Excel 文件
 	f := excelize.NewFile()
+
+	//先把原表中和数据无关的sheet加进来
+	MoveSheetFromOriginExcel(origin_sell_data_path, f, 4)
 
 	var tableNames []string
 	tableNames, _ = db.Migrator().GetTables()
 
 	//一个谷子多个角色对应,每一组包含谷子全名和cardno数据
 	multi_character_infos := [][]interface{}{}
-
 	for _, tableName := range tableNames {
 		if strings.Contains(tableName, "cardNo") {
 			var cardno []CardNo
@@ -302,5 +370,5 @@ func GenerateSellExcel(db *gorm.DB) {
 	GenerateMultiTypeSheet(db, multi_character_infos, f)
 
 	//保存文件
-	SaveExcelFile(f)
+	SaveExcelFile(f,origin_sell_data_path)
 }

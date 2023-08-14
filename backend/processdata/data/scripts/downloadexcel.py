@@ -17,6 +17,7 @@ import click
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from pywpsrpc.rpcetapi import createEtRpcInstance, etapi
 
 
 class TengXunDocument:
@@ -64,7 +65,7 @@ class TengXunDocument:
         operation_id = res.json()["operationId"]
         return operation_id
 
-    def download_excel(self, check_progress_url, file_name):
+    def download_excel(self, check_progress_url,path):
         """
         下载excel文件
         :return:
@@ -86,15 +87,15 @@ class TengXunDocument:
         if file_url:
             self.headers["content-type"] = "application/octet-stream"
             res = requests.get(url=file_url, headers=self.headers, verify=False)
-            with open(file_name, "wb") as f:
+            with open(path, "wb") as f:
                 f.write(res.content)
-            print("下载成功,文件名: " + file_name)
+            print("filename:{},filepath:{}".format(os.path.basename(path),path))
         else:
             print("下载文件地址获取失败, 下载excel文件不成功")
 
 
-def renameExcel():
-    p = path.dirname(__file__) + "/../test_excel/"
+def renameExcel(name):
+    p = path.dirname(__file__) + "/../test_excel/"+name+"/"
     file_name=""
 
     # 获取文件夹内所有文件和子文件夹
@@ -103,40 +104,38 @@ def renameExcel():
     current_datetime = datetime.strftime(datetime.now(), "%Y_%m_%d")
     if len(files) == 0:
         cnt = 1
-        file_name = f"selldata_{current_datetime}_{cnt}.xlsx"
+        file_name = f"{name}_{current_datetime}_{cnt}.xlsx"
     else:
         cnt = -1
         # 找到和当前日期相同的文件，在它的基础上次数+1
-        # print(current_datetime)
+        # print(files)
         # 先找到所有包含当前日期的文件
-        temp_names = []
         for temp_name in files:
             if temp_name.find(current_datetime) != -1:
-                temp_names.append(temp_name)
+                # 找到最后一个下划线的位置
+                temp_cnt_index = temp_name.rfind("_")
+                if temp_cnt_index != -1:
+                    # 提取最后一个下划线后的部分
+                    temp_cnt = temp_name[temp_cnt_index + 1 :]
 
-        if len(temp_names) != 0:
-            # 找到最大的那个
-            file_name = max(temp_names)
+                # 取出序号
+                temp_cnt = int(temp_cnt[: temp_cnt.find(".xlsx")])
+                # 找到最大的那个
+                if temp_cnt > cnt:
+                    cnt = temp_cnt
+                
 
-            # 找到最后一个下划线的位置
-            cnt_index = file_name.rfind("_")
-            if cnt_index != -1:
-                # 提取最后一个下划线后的部分
-                cnt = file_name[cnt_index + 1 :]
-
-            # 取出序号
-            cnt = cnt[: cnt.find(".xlsx")]
+        if cnt != -1:
             cnt = int(cnt) + 1
-            # print(cnt)
-            file_name = f"selldata_{current_datetime}_{cnt}.xlsx"
-        #如果没有，那就是今天第一次下载，创建新的文件
+            print("max cnt :{}".format(cnt))
+            file_name = f"{name}_{current_datetime}_{cnt}.xlsx"
+            #如果没有，那就是今天第一次下载，创建新的文件
         else:
             cnt = 1
-            file_name = f"selldata_{current_datetime}_{cnt}.xlsx"
+            file_name = f"{name}_{current_datetime}_{cnt}.xlsx"
     return p + file_name
 
-
-if __name__ == "__main__":
+def DownloadSellExcel():
     # excel文档地址
     document_url = "https://docs.qq.com/sheet/DRmVDY3l5aldRcGNM"
     # local_pad_id和cookie_value来自doc_info
@@ -152,5 +151,30 @@ if __name__ == "__main__":
     operation_id = tx.export_excel_task(export_excel_url)
     check_progress_url = f"https://docs.qq.com/v1/export/query_progress?u={now_user_index}&operationId={operation_id}"
 
-    path = renameExcel()
+    path = renameExcel("selldata")
     tx.download_excel(check_progress_url, path)
+
+    return path
+
+def DownloadCardExcel():
+    # excel文档地址
+    document_url = "https://docs.qq.com/sheet/DRnNkVmlHdEtHV3Bt"
+    # local_pad_id和cookie_value来自doc_info
+    # 此值每一份腾讯文档有一个,需要手动获取
+    local_pad_id = "300000000$FsdViGtKGWpm"
+    # 打开腾讯文档后,从抓到的接口中获取cookie信息(先按F5刷新，F12才能检测到doc_info)
+    cookie_value="RK=Rfn5jgFNTO; ptcz=aeb83b496ba5c5b68290e157192714bd4e92c996af50fc3a10d9009db743fcd9; fingerprint=1b5db134e35c4d438fd72ae972f6260312; low_login_enable=1; luin=o0530925206; lskey=000100000d26691cfad4c1eab0acc14e8cd83322b12b6439dc26155e98cdc6e402bb2d7e835b21680d134d76; p_luin=o0530925206; p_lskey=000400008f9f14c64ab56f9a0cc7df9412f1bcb6b9d51b54ffe59964d8a278107b1e1b35fa5af3832cdbf68a; uid=144115210445368678; utype=qq; DOC_QQ_APPID=101458937; DOC_QQ_OPENID=E0AAA7BC62A9988A22F6F16AD7B3FC90; env_id=gray-no2; gray_user=true; DOC_SID=3782b60a0dda49a688d535c3d5b58a518b65bc063c7f45f7bd6da3dfc1983865; SID=3782b60a0dda49a688d535c3d5b58a518b65bc063c7f45f7bd6da3dfc1983865; uid_key=EOP1mMQHGixzNnRqT3NDeitTWC9ZSVRxRDNFTjlDU3RsNHprUVBUQlltaWVlM1FWTGZzPSJIvzj1gcn0GCGPPoWEfTC0%2BOmVrXGJHTGPiyC56fGV7Y3KkzQWoIvNzCZMCot4PpY%2BqtqqGFmQshWHbTnMxxjInyPhxOwTuucgKNT4xKcG; loginTime=1690939770860; optimal_cdn_domain=docs2.gtimg.com; traceid=a681e0d6c0; TOK=a681e0d6c0379197; hashkey=a681e0d6; tgw_l7_route=2989f787ed3b9cae3fa89b54c6588a3a"
+    tx = TengXunDocument(document_url, local_pad_id, cookie_value)
+    now_user_index = tx.get_now_user_index()
+    # 导出文件任务url，来自export_office接口
+    export_excel_url = f"https://docs.qq.com/v1/export/export_office?u={now_user_index}"
+    # 获取导出任务的操作id，来自query_process接口
+    operation_id = tx.export_excel_task(export_excel_url)
+    check_progress_url = f"https://docs.qq.com/v1/export/query_progress?u={now_user_index}&operationId={operation_id}"
+
+    path = renameExcel("carddata")
+    tx.download_excel(check_progress_url, path)
+
+    return path
+
+DownloadSellExcel()

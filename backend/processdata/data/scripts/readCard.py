@@ -3,10 +3,10 @@ from os import path
 import json
 
 
-def readCardInfo(filename):
-    p = path.dirname(__file__) + "/../excel/" + filename
+def readCardInfo(path):
+    # p = path.dirname(__file__) + "/../excel/" + filename
     # 打开Excel文件
-    workbook = openpyxl.load_workbook(p)
+    workbook = openpyxl.load_workbook(path)
     sheet_names = workbook.sheetnames
     # 选择工作表
     sheet = workbook[sheet_names[0]]
@@ -22,10 +22,8 @@ def readCardInfo(filename):
 
     return data
 
-
-if __name__ == "__main__":
-    file_name = "card_info.xlsx"
-    excel_data = readCardInfo(file_name)
+def ReadCard(file_path):
+    excel_data = readCardInfo(file_path)
 
     file_path = "carddata.json"
     p = path.dirname(__file__) + "/../json/" + file_path
@@ -34,6 +32,3 @@ if __name__ == "__main__":
     with open(p, "w", encoding="utf-8") as json_file:
         json.dump(data, json_file, ensure_ascii=False, indent=4)
 
-    # 打印数据
-    for row in excel_data:
-        print(row)
