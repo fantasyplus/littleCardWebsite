@@ -155,7 +155,7 @@ func SortSheetByNo(f *excelize.File, start_sheet int) {
 }
 
 // 保存文件
-func SaveExcelFile(f *excelize.File,origin_name string) {
+func SaveExcelFile(f *excelize.File, origin_name string) {
 	//删除默认的Sheet1
 	f.DeleteSheet("Sheet1")
 
@@ -191,7 +191,10 @@ func GenerateSingleTypeSheet(db *gorm.DB, card_data []CardNo, full_name string, 
 		cn_qq := getCNQQ(db, data.PersonID)
 		num := data.CardNum
 		status := data.Status
-
+		if status == "none" {
+			status = ""
+		} 
+		
 		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("A%d", index+2), cn_qq)
 		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("B%d", index+2), num)
 		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("C%d", index+2), status)
@@ -242,6 +245,9 @@ func SetMultiTypeData(db *gorm.DB, item [][]CardNo, sheet_name string, character
 			cn_qq := getCNQQ(db, data.PersonID)
 			num := data.CardNum
 			status := data.Status
+			if status == "none" {
+				status = ""
+			}
 
 			var cell_name_character string
 			if is_personid_shown[data.PersonID] != "" {
@@ -333,7 +339,7 @@ func GenerateMultiTypeSheet(db *gorm.DB, multi_character_infos [][]interface{}, 
 2.第一列的“cn+群内qq:行时2986454288”，可以通过person_id查找到person_info表，得到cn和qq
 3.数量和状态列就直接读取
 */
-func GenerateSellExcel(db *gorm.DB,origin_sell_data_path string) {
+func GenerateSellExcel(db *gorm.DB, origin_sell_data_path string) {
 
 	// 创建一个新的 Excel 文件
 	f := excelize.NewFile()
@@ -370,5 +376,5 @@ func GenerateSellExcel(db *gorm.DB,origin_sell_data_path string) {
 	GenerateMultiTypeSheet(db, multi_character_infos, f)
 
 	//保存文件
-	SaveExcelFile(f,origin_sell_data_path)
+	SaveExcelFile(f, origin_sell_data_path)
 }

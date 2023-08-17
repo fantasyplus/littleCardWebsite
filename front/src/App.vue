@@ -2,6 +2,7 @@
 import { ref, toRaw } from "vue"
 import request from "./utils/request.js"
 import words from "./components/words.vue"
+import axios from "axios"
 
 // data
 let searchInput = $ref("")
@@ -106,6 +107,22 @@ const handleAdd = () => {
   tableRowData = {}
 }
 
+//download
+const hanleDownload = async () => {
+  console.log("download")
+  await axios.get("/user/download", {
+    responseType: "blob"
+  }).then(res => {
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'filename.xlsx');
+    document.body.appendChild(link);
+    link.click();
+  })
+
+}
+
 //edit
 const handleEditRow = (row) => {
   addDialogVisible = true
@@ -172,6 +189,7 @@ const handleSearch = async () => {
         placeholder="Please input name to search" />
       <div class="btn-list">
         <el-button @click="handleAdd" type="primary">Add</el-button>
+        <el-button @click="hanleDownload" type="primary">Download</el-button>
         <el-button v-if="multipleTableSelection.length > 0" @click="handleDelMultiRows" type="danger">Delete</el-button>
       </div>
     </div>

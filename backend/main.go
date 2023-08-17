@@ -253,6 +253,12 @@ func main() {
 		}
 	})
 
+	// 路由处理函数，用于处理文件下载请求
+	r.GET("/user/download", func(c *gin.Context) {
+		filePath := "/home/web/web/web-project/backend/processdata/data/test_excel/selldata/selldata_2023_08_14_7.xlsx" // 修改为实际文件路径
+		c.File(filePath)
+	}) 
+
 	port := ":3001"
 	r.Run(port)
 }

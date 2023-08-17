@@ -69,6 +69,9 @@ func TestLqbz(t *testing.T) {
 	//根据excel文件更新数据库
 	processdata.UpdateDataBase()
 
+	//更新某人的状态
+	// processdata.UpdateStatusByCNQQ(db, "银河", "", "none")
+
 	//在这之前要更新数据库
 	processdata.GenerateSellExcel(db, sell_data_path)
 }
