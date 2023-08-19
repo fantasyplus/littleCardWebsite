@@ -138,12 +138,13 @@ const handleSearch = async () => {
     <div class="table-box">
         <!-- Title -->
         <div class="title">
-            <h2>the most simple crud demo</h2>
+            <h2>到货List</h2>
         </div>
         <!-- query -->
+        <h3>请再次输入CN或QQ（注：只显示已到货且能发货的！！！）</h3>
         <div class="query-box">
             <el-input class="search-input" @input="handleSearch" v-model="searchInput"
-                placeholder="Please input name to search" />
+                placeholder="CN或QQ" />
             <div class="btn-list">
                 <el-button @click="handleAdd" type="primary">Add</el-button>
                 <el-button @click="hanleDownload" type="primary">Download</el-button>
@@ -205,7 +206,7 @@ const handleSearch = async () => {
     </el-dialog>
 
 
-    <router-link to="/words">
+    <router-link to="/">
         <el-button type="primary">
             返回
         </el-button>

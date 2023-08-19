@@ -21,22 +21,29 @@ let handleLinkCardTable = () => {
             </el-container>
             <ol class="card-ol">
                 <li>
-                    首先核对苹果喵藏宝阁的
-                    <a href="https://docs.qq.com/sheet/DRnNkVmlHdEtHV3Bt?tab=BB08J2" target="_blank">到货表</a>
+                    首先核对苹果喵藏宝阁通知群的
+                    <a href="https://docs.qq.com/sheet/DRnNkVmlHdEtHV3Bt?tab=BB08J2" target="_blank">
+                        <el-button type="info">到货表</el-button>
+                    </a>
                 </li>
                 <li>
                     <ul>
                         <li>
+                            <a href="https://docs.qq.com/form/page/DRkFnRFlGbmlpaVlE" target="_blank">
+                                <el-button type="primary">快速发货通道登记</el-button>
+                            </a>
                             <router-link to="/cardTable" @click="handleLinkCardTable">
-                                <el-button type="primary">快速发货通道</el-button>
+                                <el-button type="danger">快速发货通道</el-button>
                             </router-link>
                         </li>
                         <li>
+                            <a href="https://docs.qq.com/form/page/DRnJKcUdPR09XSXpT" target="_blank">
+                                <el-button type="success">普通发货通道登记</el-button>
+                            </a>
                             查看自己微店的下单记录，罗列自己的list—&gt;到货表的对应序号+小料名字+数量
                         </li>
                         <li>
                             等待审核，查看
-                            <a href="https://docs.qq.com/form/page/DRkFnRFlGbmlpaVlE" target="_blank">补邮收集进度</a>
                         </li>
                         <li>
                             付款
@@ -45,7 +52,15 @@ let handleLinkCardTable = () => {
                         </li>
                     </ul>
                 </li>
-                <li>转单</li>
+                <li>
+                    <a href="https://docs.qq.com/form/page/DRmJ0aFNmVVJjcG1J?u=8f6fa7d1d4264bf3a110fcbf5738d417#/fill" target="_blank">
+                        <el-button type="warning">转单登记</el-button>
+                    </a>
+                    <a href="https://docs.qq.com/sheet/DRlNCWGN2YkJ2cGZU?tab=azfe1s" target="_blank">
+                        <el-button type="warning" color="#626aef">审核结果查询</el-button>
+                        
+                    </a>
+                </li>
             </ol>
         </el-card>
     </el-container>
