@@ -1,7 +1,6 @@
 package main
 
 import (
-	_"fmt"
 	"strconv"
 	"time"
 
@@ -10,35 +9,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 
-	_"backend/processdata"
+	"backend/processdata"
 )
 
-// 定义表示您的表的模型结构
-type User struct {
-	gorm.Model
-	Name    string `gorm:"type:varchar(255); not null" json:"name" binding:"required"`
-	State   string `gorm:"type:varchar(255); not null" json:"state" binding:"required"`
-	City    string `gorm:"type:varchar(255); not null" json:"city" binding:"required"`
-	Address string `gorm:"type:varchar(255); not null" json:"address" binding:"required"`
-}
-
-//relate to Table cardNo
-type SingleCardData struct{
-	gorm.Model
-	Person_id uint `gorm:"type:int; not null" json:"person_id" binding:"required"`
-	Card_name string `gorm:"type:varchar(255); not null" json:"card_name" binding:"required"`
-	Card_num uint `gorm:"type:int; not null" json:"card_num" binding:"required"`
-}
-
-type CardInfo struct{
-	gorm.Model
-	Card_id string `gorm:"type:varchar(255); not null" json:"card_id" binding:"required"`
-	Card_name string `gorm:"type:varchar(255); not null" json:"card_name" binding:"required"`
-	Card_character string `gorm:"type:varchar(255); not null" json:"card_character" binding:"required"`
-	Card_type string `gorm:"type:varchar(255); not null" json:"card_type" binding:"required"`
-	Card_condition string `gorm:"type:varchar(255); not null" json:"card_condition" binding:"required"`
-	Other string `gorm:"type:varchar(255); not null" json:"other" binding:"required"`
-}
 
 /* 注意点 :
 结构体里面的变量 (Name) 必须是首字符大写
@@ -49,7 +22,7 @@ binding required 表示必须传入
 
 func main() {
 	// 将 "your_username"、"your_password" 和 "your_host:port" 替换为您实际的 MySQL 凭据
-	dsn := "root:yxdbc2008@tcp(localhost:3306)/test?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:yxdbc2008@tcp(localhost:3306)/non_commercial_test?charset=utf8mb4&parseTime=True&loc=Local"
 
 	// 连接到 MySQL 数据库服务器，不指定数据库名称
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
@@ -75,7 +48,7 @@ func main() {
 	// SetConnMaxLifetime sets the maximum amount of time a connection may be reused.
 	sqlDB.SetConnMaxLifetime(10 * time.Second)
 
-	db.AutoMigrate(&User{})
+	// db.AutoMigrate(&processdata.CardInfo{})
 
 	r := gin.Default()
 
@@ -86,7 +59,7 @@ func main() {
 
 	// add
 	r.POST("/user/add", func(c *gin.Context) {
-		var data User
+		var data processdata.CardInfo
 
 		if err := c.ShouldBindJSON(&data); err != nil {
 			c.JSON(200, gin.H{
@@ -111,7 +84,7 @@ func main() {
 	// 3. 从数据库中删除
 	// 3. 返回, id 没有找到
 	r.DELETE("/user/delete/:id", func(c *gin.Context) {
-		var data []User
+		var data []processdata.CardInfo
 
 		id := c.Param("id")
 
@@ -142,7 +115,7 @@ func main() {
 		// 3. 修改对应条目
 		// 4. 返回 id,没有找到
 
-		var data User
+		var data processdata.CardInfo
 
 		// 接受 id
 		id := c.Param("id")
@@ -185,10 +158,10 @@ func main() {
 		// 获取路径参数
 		name := c.Param("name")
 
-		var dataList []User
+		var dataList []processdata.CardInfo
 
 		// 查询数据库
-		db.Where("name = ? ", name).Find(&dataList)
+		db.Where("card_name = ? ", name).Find(&dataList)
 
 		// 判断是否查询到数据
 		if len(dataList) == 0 {
@@ -209,7 +182,7 @@ func main() {
 	// 全部查询
 	r.GET("/user/list", func(c *gin.Context) {
 
-		var dataList []User
+		var dataList []processdata.CardInfo
 
 		// 1. 查询全部数据,  查询分页数据
 		pageSize, _ := strconv.Atoi(c.Query("pageSize"))
