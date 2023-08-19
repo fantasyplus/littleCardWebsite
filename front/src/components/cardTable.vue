@@ -6,12 +6,12 @@ import axios from "axios"
 // data
 let searchInput = $ref("")
 let tableData = $ref([{
-    CardID:"",
-    card_name:"",
-    card_character:"",
-    card_type:"",
-    card_condition:"",
-    other_info:"",
+    CardID: "",
+    card_name: "",
+    card_character: "",
+    card_type: "",
+    card_condition: "",
+    other_info: "",
 }])
 let tableDataCopy = Object.assign(tableData)
 
@@ -20,27 +20,28 @@ let addDialogLabelPosition = $ref("left")
 let addDialogVisible = $ref(false)
 let dialogType = $ref("add")
 let tableRowData = $ref({
-    CardID:"",
-    card_name:"",
-    card_character:"",
-    card_type:"",
-    card_condition:"",
-    other_info:"",
+    CardID: "",
+    card_name: "",
+    card_character: "",
+    card_type: "",
+    card_condition: "",
+    other_info: "",
 })
 
-let totalPage = $ref(5)
-let curPage = $ref(1)
 // methods
 
 
 //request page data from server
-const getTableData = async (cur = 1) => {
+const getTableData = async (page_num = 1) => {
     let res = await request.get("/list", {
-        pageSize: 5,
-        pageNum: cur
+        pageSize: 1000,
+        pageNum: page_num
     })
-    tableData = res.data.data
-    totalPage = Math.ceil(res.data.totalitems / res.data.pageSize)
+    // Filter out items with card_name as "none"
+    const filteredData = res.data.data.filter(item => item.card_name !== "None");
+
+    // Update tableData with filteredData
+    tableData = filteredData;
     console.log("init table:", res)
 }
 //init table data
@@ -151,8 +152,8 @@ const handleSearch = async () => {
             </div>
         </div>
         <!-- table -->
-        <el-table border ref="multipleTableRef" :data="tableData" style="width: 100%"
-            @selection-change="handleSelectionChange">
+        <el-table border ref="multipleTableRef" :data="tableData" style="width: 100%" height="500px"
+            :infinite-scroll-disabled="false" @selection-change="handleSelectionChange">
             <el-table-column type="selection" width="55" />
             <el-table-column prop="CardID" label="Card ID" width="80" />
             <el-table-column prop="card_name" label="Card Name" width="120" />
@@ -168,8 +169,6 @@ const handleSearch = async () => {
                 </template>
             </el-table-column>
         </el-table>
-        <el-pagination @current-change="handleChangePage" class="table-pagination" layout="prev, pager, next"
-            :page-count="totalPage" :hide-on-single-page="true" v-model:current-page="curPage" />
 
     </div>
     <!-- Form -->

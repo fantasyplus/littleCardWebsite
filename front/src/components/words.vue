@@ -25,9 +25,9 @@ let handleLinkCardTable = () => {
                     <a href="https://docs.qq.com/sheet/DRnNkVmlHdEtHV3Bt?tab=BB08J2" target="_blank">到货表</a>
                 </li>
                 <li>
-                    <ul> 
+                    <ul>
                         <li>
-                            <router-link to="/cardTable" >
+                            <router-link to="/cardTable" @click="handleLinkCardTable">
                                 <el-button type="primary">快速发货通道</el-button>
                             </router-link>
                         </li>
