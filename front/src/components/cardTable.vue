@@ -6,41 +6,13 @@ import axios from "axios"
 // data
 let searchInput = $ref("")
 let tableData = $ref([{
-    id: "1",
-    name: 'tom1',
-    state: 'California',
-    city: 'Los Angeles',
-    address: 'No. 189, Grove St, Los Angeles',
-},
-{
-    id: "2",
-    name: 'Tom2',
-    state: 'California',
-    city: 'Los Angeles',
-    address: 'No. 189, Grove St, Los Angeles',
-},
-{
-    id: "3",
-    name: 'Tom3',
-    state: 'California',
-    city: 'Los Angeles',
-    address: 'No. 189, Grove St, Los Angeles',
-},
-{
-    id: "4",
-    name: 'Tom4',
-    state: 'California',
-    city: 'Los Angeles',
-    address: 'No. 189, Grove St, Los Angeles',
-},
-{
-    id: "5",
-    name: 'Tom5',
-    state: 'California',
-    city: 'Los Angeles',
-    address: 'No. 189, Grove St, Los Angeles',
-}
-])
+    CardID:"",
+    card_name:"",
+    card_character:"",
+    card_type:"",
+    card_condition:"",
+    other_info:"",
+}])
 let tableDataCopy = Object.assign(tableData)
 
 let multipleTableSelection = $ref([])
@@ -48,11 +20,12 @@ let addDialogLabelPosition = $ref("left")
 let addDialogVisible = $ref(false)
 let dialogType = $ref("add")
 let tableRowData = $ref({
-    id: "",
-    name: "",
-    state: "",
-    city: "",
-    address: "",
+    CardID:"",
+    card_name:"",
+    card_character:"",
+    card_type:"",
+    card_condition:"",
+    other_info:"",
 })
 
 let totalPage = $ref(5)
@@ -79,10 +52,6 @@ const handleChangePage = (val) => {
 
 // delete row from server
 const handleDelRow = async (row) => {
-    // let id = row.id
-    // let index = tableData.findIndex((item) => item.id === id)
-    // tableData.splice(index, 1)
-
     await request.delete(`/delete/${row.ID}`)
     await getTableData(curPage)
 }
@@ -108,7 +77,6 @@ const handleAdd = () => {
 
 //download
 const hanleDownload = async () => {
-    console.log("download")
     await axios.get("/user/download", {
         responseType: "blob"
     }).then(res => {
@@ -152,16 +120,6 @@ const handleDialogConfirm = async () => {
 
 //search
 const handleSearch = async () => {
-    // pure front search
-    // if (searchInput === "") {
-    //   tableData = tableDataCopy
-    //   return
-    // }
-    // let searchResult = tableDataCopy.filter((item) => {
-    //   return item.name.match(searchInput)
-    // })
-    // tableData = searchResult
-
     // search from server
     if (searchInput.length > 0) {
         let res = await request.get(`/list/${searchInput}`)
@@ -196,10 +154,12 @@ const handleSearch = async () => {
         <el-table border ref="multipleTableRef" :data="tableData" style="width: 100%"
             @selection-change="handleSelectionChange">
             <el-table-column type="selection" width="55" />
-            <el-table-column prop="name" label="Name" width="120" />
-            <el-table-column prop="state" label="State" width="120" />
-            <el-table-column prop="city" label="City" width="120" />
-            <el-table-column prop="address" label="Address" width="300" />
+            <el-table-column prop="CardID" label="Card ID" width="80" />
+            <el-table-column prop="card_name" label="Card Name" width="120" />
+            <el-table-column prop="card_character" label="Card Character" width="130" />
+            <el-table-column prop="card_type" label="Card Type" width="120" />
+            <el-table-column prop="card_condition" label="Card Condition" width="120" />
+            <el-table-column prop="other_info" label="Other Info" width="100" />
             <el-table-column fixed="right" label="Operations" width="120">
                 <template #default="scope">
                     <el-button link type="primary" size="small" style="color: #F56C6C
@@ -216,17 +176,23 @@ const handleSearch = async () => {
     <el-dialog @keyup.enter="handleDialogConfirm" v-model="addDialogVisible" :title="dialogType === 'add' ? 'add' : 'edit'"
         draggable>
         <el-form v-model="tableRowData" :label-position="addDialogLabelPosition" :label-width="120">
-            <el-form-item label="name">
-                <el-input v-model="tableRowData.name" autocomplete="off" />
+            <el-form-item label="CardID">
+                <el-input v-model="tableRowData.card_id" autocomplete="off" />
             </el-form-item>
-            <el-form-item label="state">
-                <el-input v-model="tableRowData.state" autocomplete="off" />
+            <el-form-item label="card_name">
+                <el-input v-model="tableRowData.card_name" autocomplete="off" />
+            </el-form-item>2
+            <el-form-item label="card_character">
+                <el-input v-model="tableRowData.card_character" autocomplete="off" />
             </el-form-item>
-            <el-form-item label="city">
-                <el-input v-model="tableRowData.city" autocomplete="off" />
+            <el-form-item label="card_type">
+                <el-input v-model="tableRowData.card_type" autocomplete="off" />
             </el-form-item>
-            <el-form-item label="address">
-                <el-input v-model="tableRowData.address" autocomplete="off" />
+            <el-form-item label="card_condition">
+                <el-input v-model="tableRowData.card_condition" autocomplete="off" />
+            </el-form-item>
+            <el-form-item label="other_info">
+                <el-input v-model="tableRowData.other_info" autocomplete="off" />
             </el-form-item>
         </el-form>
         <template #footer>
