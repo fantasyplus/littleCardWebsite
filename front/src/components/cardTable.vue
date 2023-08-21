@@ -8,14 +8,6 @@ import { VDataTableVirtual } from 'vuetify/labs/VDataTable'
 
 // data
 let searchInput = $ref("")
-let tableHeaders = $ref([
-    { title: "CardID", key: "CardID" },
-    { title: "card_name", key: "card_name" },
-    { title: "card_character", key: "card_character" },
-    { title: "card_type", key: "card_type" },
-    { title: "card_condition", key: "card_condition" },
-    { title: "other_info", key: "other_info" },
-])
 let tableData = $ref([{
     CardID: "",
     card_name: "",
@@ -24,10 +16,8 @@ let tableData = $ref([{
     card_condition: "",
     other_info: "",
 }])
-let tableDataCopy = Object.assign(tableData)
 
 let multipleTableSelection = $ref([])
-let addDialogLabelPosition = $ref("left")
 let addDialogVisible = $ref(false)
 let dialogType = $ref("add")
 let tableRowData = $ref({
@@ -39,6 +29,7 @@ let tableRowData = $ref({
     other_info: "",
 })
 
+let cardExpandList = $ref([])
 // methods
 
 
@@ -53,14 +44,16 @@ const getTableData = async (page_num = 1) => {
 
     // Update tableData with filteredData
     tableData = filteredData;
-    console.log("init table:", res)
+    console.log("init tableData:", res)
+
+    for (let i = 0; i < tableData.length; i++) {
+        cardExpandList.push(false)
+    }
+    console.log("init cardExpandList:", cardExpandList)
 }
 //init table data
 getTableData()
 
-const handleChangePage = (val) => {
-    getTableData(val)
-}
 
 // delete row from server
 const handleDelRow = async (row) => {
@@ -76,9 +69,6 @@ const handleDelMultiRows = () => {
     multipleTableSelection = []
 }
 
-const handleSelectionChange = (val) => {
-    multipleTableSelection = val
-}
 
 // add
 const handleAdd = () => {
@@ -103,32 +93,8 @@ const hanleDownload = async () => {
 }
 
 //edit
-const handleEditRow = (row) => {
-    addDialogVisible = true
-    dialogType = "edit"
-    tableRowData = { ...row }
-}
 
 // confirm add or edit data
-const handleDialogConfirm = async () => {
-    addDialogVisible = false
-    if (dialogType === "add") {
-        let res = await request.post(`/add`, {
-            ...tableRowData
-        })
-        if (res.code === 200) {
-            await getTableData()
-        }
-    }
-    else if (dialogType === "edit") {
-        let res = await request.put(`/update/${tableRowData.ID}`, {
-            ...tableRowData
-        })
-        if (res.code === 200) {
-            await getTableData()
-        }
-    }
-}
 
 //search
 const handleSearch = async () => {
@@ -142,6 +108,10 @@ const handleSearch = async () => {
     }
 }
 
+
+const handleCardListClick = (index) => {
+    cardExpandList[index] = !cardExpandList[index]
+}
 
 </script>
 
@@ -164,9 +134,45 @@ const handleSearch = async () => {
         </div>
 
         <!-- table -->
-        <div class="table-container">
+        <!-- <div class="table-container">
             <v-data-table-virtual class="card-table" :headers="tableHeaders" :items="tableData"></v-data-table-virtual>
-        </div>
+        </div> -->
+
+        <v-container class="card-list-container">
+            <v-card>
+                <v-list>
+                    <v-list-subheader>Card List</v-list-subheader>
+
+                    <v-list-item v-for="(item, i) in tableData" :key="i" :value="item" color="grey lighten-2"
+                        @click="handleCardListClick(i)">
+                        <v-card>
+                            <v-card-title>
+                                <v-list-item-title>{{ item.card_name }}</v-list-item-title>
+                                <v-list-item-subtitle>{{ item.card_character }}</v-list-item-subtitle>
+                            </v-card-title>
+                            <v-card-text>
+                                <v-list-item-title>CardID: {{ item.CardID }}</v-list-item-title>
+                                <v-list-item-subtitle>CardType: {{ item.card_type }}</v-list-item-subtitle>
+                                <v-list-item-subtitle>CardCondition: {{ item.card_condition
+                                }}</v-list-item-subtitle>
+                                <v-list-item-subtitle>OtherInfo: {{ item.other_info }}</v-list-item-subtitle>
+                            </v-card-text>
+                            <v-card-actions>
+                                <!-- <v-btn color="red" text @click="handleDelRow(item)">Delete</v-btn> -->
+                                <!-- <v-btn color="green" text @click="handleEdit(item)">Edit</v-btn> -->
+                            </v-card-actions>
+
+                        </v-card>
+
+                        <v-expand-transition>
+                            <v-img v-show="cardExpandList[i]" src="https://cdn.vuetifyjs.com/images/cards/foster.jpg"
+                                width="100%" height="auto"></v-img>
+                        </v-expand-transition>
+                    </v-list-item>
+
+                </v-list>
+            </v-card>
+        </v-container>
     </div>
     <!-- Form -->
     <!-- <el-dialog @keyup.enter="handleDialogConfirm" v-model="addDialogVisible" :title="dialogType === 'add' ? 'add' : 'edit'"
@@ -200,8 +206,51 @@ const handleSearch = async () => {
             </span>
         </template>
     </el-dialog> -->
+    <v-container class="bg-surface-variant">
+        <v-row no-gutters>
+            <v-col>
+                <v-sheet class="pa-2 ma-2">
+                    .v-col-auto
+                </v-sheet>
+            </v-col>
+            <v-col>
+                <v-sheet class="pa-2 ma-2">
+                    .v-col-auto
+                </v-sheet>
+            </v-col>
+        </v-row>
 
+        <v-row no-gutters>
+            <v-col>
+                <v-sheet class="pa-2 ma-2">
+                    .v-col-auto
+                </v-sheet>
+            </v-col>
+            <v-col>
+                <v-sheet class="pa-2 ma-2">
+                    .v-col-auto
+                </v-sheet>
+            </v-col>
+            <v-col>
+                <v-sheet class="pa-2 ma-2">
+                    .v-col-auto
+                </v-sheet>
+            </v-col>
+        </v-row>
 
+        <v-row no-gutters>
+            <v-col cols="2">
+                <v-sheet class="pa-2 ma-2">
+                    .v-col-2
+                </v-sheet>
+            </v-col>
+            <v-col>
+                <v-sheet class="pa-2 ma-2">
+                    .v-col-auto
+                </v-sheet>
+            </v-col>
+        </v-row>
+    </v-container>
     <router-link to="/">
         <v-btn>
             返回
@@ -210,7 +259,6 @@ const handleSearch = async () => {
 </template>
 
 <style scoped>
-
 .title {
     text-align: center;
 }
@@ -220,5 +268,4 @@ const handleSearch = async () => {
     justify-content: space-between;
     margin-bottom: 20px;
 }
-
 </style>

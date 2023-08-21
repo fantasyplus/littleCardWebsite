@@ -9,7 +9,7 @@ let handleLinkCardTable = () => {
 </script>
 
 <template>
-    <div class="container" v-if="!cardTableVisible">
+    <div class="intro-container" v-if="!cardTableVisible">
         <v-card>
             <h1 class="title">排谷 微店APP搜索苹果喵藏宝阁</h1>
             <div class="card-intro">
@@ -33,7 +33,7 @@ let handleLinkCardTable = () => {
                             <v-btn color="green-lighten-1">快速发货通道登记</v-btn>
                         </a>
                         <router-link to="/cardTable" @click="handleLinkCardTable">
-                            <v-btn color="amber-lighten-2">快速发货通道</v-btn>
+                            <v-btn color="blue-grey-lighten-2">快速发货通道</v-btn>
                         </router-link>
                     </li>
                     <li>
@@ -58,7 +58,7 @@ let handleLinkCardTable = () => {
                         <v-btn color="indigo-darken-1">转单登记</v-btn>
                     </a>
                     <a href="https://docs.qq.com/sheet/DRlNCWGN2YkJ2cGZU?tab=azfe1s" target="_blank">
-                        <v-btn color="purple-lighten-1">审核结果查询</v-btn>
+                        <v-chip color="purple-lighten-1" :ripple="true" link>审核结果查询</v-chip>
                     </a>
                 </v-list-item>
             </v-list>
@@ -67,6 +67,10 @@ let handleLinkCardTable = () => {
     <router-view v-if="cardTableVisible"></router-view>
 </template>
 <style scoped>
+.intro-container {
+    padding: 10px;
+}
+
 .v-btn {
     margin: 0 10px;
 
