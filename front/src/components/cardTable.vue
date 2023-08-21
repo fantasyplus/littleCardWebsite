@@ -3,8 +3,19 @@ import { ref, toRaw } from "vue"
 import request from "../utils/request.js"
 import axios from "axios"
 
+//vuetify labs
+import { VDataTableVirtual } from 'vuetify/labs/VDataTable'
+
 // data
 let searchInput = $ref("")
+let tableHeaders = $ref([
+    { title: "CardID", key: "CardID" },
+    { title: "card_name", key: "card_name" },
+    { title: "card_character", key: "card_character" },
+    { title: "card_type", key: "card_type" },
+    { title: "card_condition", key: "card_condition" },
+    { title: "other_info", key: "other_info" },
+])
 let tableData = $ref([{
     CardID: "",
     card_name: "",
@@ -131,6 +142,7 @@ const handleSearch = async () => {
     }
 }
 
+
 </script>
 
 <template>
@@ -141,39 +153,23 @@ const handleSearch = async () => {
             <h2>到货List</h2>
         </div>
         <!-- query -->
-        <h3>请再次输入CN或QQ（注：只显示已到货且能发货的！！！）</h3>
+        <h3>请再次输入CN或QQ（注：只显示已到货且能发货的！！）</h3>
         <div class="query-box">
-            <el-input class="search-input" @input="handleSearch" v-model="searchInput"
-                placeholder="CN或QQ" />
+            <v-text-field label="CN或QQ" class="search-input" @input="handleSearch" v-model="searchInput"></v-text-field>
             <div class="btn-list">
-                <el-button @click="handleAdd" type="primary">Add</el-button>
-                <el-button @click="hanleDownload" type="primary">Download</el-button>
-                <el-button v-if="multipleTableSelection.length > 0" @click="handleDelMultiRows"
-                    type="danger">Delete</el-button>
+                <v-btn @click="handleAdd" color="red-lighten-1">Add</v-btn>
+                <v-btn @click="hanleDownload" color="green-darken-2">Download</v-btn>
+                <v-btn v-if="multipleTableSelection.length > 0" @click="handleDelMultiRows">Delete</v-btn>
             </div>
         </div>
-        <!-- table -->
-        <el-table border ref="multipleTableRef" :data="tableData" style="width: 100%" height="500px"
-            :infinite-scroll-disabled="false" @selection-change="handleSelectionChange">
-            <el-table-column type="selection" width="55" />
-            <el-table-column prop="CardID" label="Card ID" width="80" />
-            <el-table-column prop="card_name" label="Card Name" width="120" />
-            <el-table-column prop="card_character" label="Card Character" width="130" />
-            <el-table-column prop="card_type" label="Card Type" width="120" />
-            <el-table-column prop="card_condition" label="Card Condition" width="120" />
-            <el-table-column prop="other_info" label="Other Info" width="100" />
-            <el-table-column fixed="right" label="Operations" width="120">
-                <template #default="scope">
-                    <el-button link type="primary" size="small" style="color: #F56C6C
-;" @click="handleDelRow(scope.row)">Delete</el-button>
-                    <el-button link type="primary" size="small" @click="handleEditRow(scope.row)">Edit</el-button>
-                </template>
-            </el-table-column>
-        </el-table>
 
+        <!-- table -->
+        <div class="table-container">
+            <v-data-table-virtual class="card-table" :headers="tableHeaders" :items="tableData"></v-data-table-virtual>
+        </div>
     </div>
     <!-- Form -->
-    <el-dialog @keyup.enter="handleDialogConfirm" v-model="addDialogVisible" :title="dialogType === 'add' ? 'add' : 'edit'"
+    <!-- <el-dialog @keyup.enter="handleDialogConfirm" v-model="addDialogVisible" :title="dialogType === 'add' ? 'add' : 'edit'"
         draggable>
         <el-form v-model="tableRowData" :label-position="addDialogLabelPosition" :label-width="120">
             <el-form-item label="CardID">
@@ -197,34 +193,23 @@ const handleSearch = async () => {
         </el-form>
         <template #footer>
             <span class="dialog-footer">
-                <el-button @click="addDialogVisible = false">Cancel</el-button>
-                <el-button type="primary" @click="handleDialogConfirm">
+                <v-btn @click="addDialogVisible = false">Cancel</v-btn>
+                <v-btn  @click="handleDialogConfirm">
                     Confirm
-                </el-button>
+                </v-btn>
             </span>
         </template>
-    </el-dialog>
+    </el-dialog> -->
 
 
     <router-link to="/">
-        <el-button type="primary">
+        <v-btn>
             返回
-        </el-button>
+        </v-btn>
     </router-link>
 </template>
 
 <style scoped>
-.table-box {
-    width: 800px;
-    /* margin: 200px; */
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    /* 通过使用transform属性和translate函数，
-  将元素向左和向上移动自身宽度和高度的50%。
-  这样，元素的中心点将准确地位于容器的中心位置。 */
-    transform: translate(-50%, -50%);
-}
 
 .title {
     text-align: center;
@@ -232,24 +217,8 @@ const handleSearch = async () => {
 
 .query-box {
     display: flex;
-    /* 这个属性用于设置子元素在主轴（水平方向）上的对齐方式。
-  space-between表示子元素会在主轴上均匀分布，让第一个子元素在最左边，最后一个子元素在最右边，
-  中间的子元素则在它们之间均匀分布，形成空间间隔。 */
     justify-content: space-between;
     margin-bottom: 20px;
 }
 
-.table-pagination {
-    display: flex;
-    justify-content: center;
-    margin-top: 10px;
-}
-
-.search-input {
-    width: 300px;
-}
-
-.el-form-item {
-    text-align: center;
-}
 </style>

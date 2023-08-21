@@ -17,7 +17,7 @@
 
 // 引入文件
 import axios from "axios"
-import { ElMessage } from "element-plus";
+// import { ElMessage } from "element-plus";
 
 // 全局配置
 const service = axios.create({
@@ -30,12 +30,13 @@ service.interceptors.response.use(res => {
     const { code, message, data } = res.data
     if (code === 200) {
         //request success
-        ElMessage.success(message)
+        // ElMessage.success(message)
+        
         return { code, data }
     }
     else if (code === 400) {
         //request fail
-        ElMessage.error(message)
+        // ElMessage.error(message)
     }
 })
 

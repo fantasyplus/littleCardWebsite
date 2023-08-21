@@ -3,8 +3,7 @@ import words from "./components/words.vue"
 </script>
 
 <template>
-  <words />
+    <words />
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

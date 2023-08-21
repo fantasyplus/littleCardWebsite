@@ -8,12 +8,15 @@
   },
   "dependencies": {
     "amfe-flexible": "^2.2.1",
+    "autoprefixer": "^10.4.15",
     "axios": "^1.4.0",
     "el-table-infinite-scroll": "^3.0.1",
     "element-plus": "^2.3.8",
     "postcss-pxtorem": "^6.0.0",
+    "vant": "^4.6.6",
     "vue": "^3.2.37",
-    "vue-router": "^4.0.13"
+    "vue-router": "^4.0.13",
+    "vuetify": "^3.3.13"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^2.3.3",

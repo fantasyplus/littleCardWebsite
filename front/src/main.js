@@ -1,15 +1,22 @@
 import { createApp } from 'vue'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
-import 'amfe-flexible'
-import ElTableInfiniteScroll from "el-table-infinite-scroll";
-import router from './utils/router'
 import App from './App.vue'
+
+// Vuetify
+import 'vuetify/styles'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+
+const vuetify = createVuetify({
+  components,
+  directives,
+})
+
+import router from './utils/router'
 
 const app = createApp(App)
 
-app.use(ElementPlus)
-app.use(ElTableInfiniteScroll);
+app.use(vuetify)
 app.use(router)
 
 app.mount('#app')
