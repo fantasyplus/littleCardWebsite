@@ -8,78 +8,79 @@ import { VDataTableVirtual } from 'vuetify/labs/VDataTable'
 
 // data
 let searchInput = $ref("")
-let tableData = $ref([{
+//卡片的基础信息
+let CardInfoList = $ref([{
     CardID: "",
     card_name: "",
     card_character: "",
     card_type: "",
     card_condition: "",
+    card_num: "",
     other_info: "",
 }])
-
-let multipleTableSelection = $ref([])
-let addDialogVisible = $ref(false)
-let dialogType = $ref("add")
-let tableRowData = $ref({
+let CardInfo = $ref({
     CardID: "",
     card_name: "",
     card_character: "",
     card_type: "",
     card_condition: "",
+    card_num: "",
     other_info: "",
 })
+
+const tableHeaders = $ref([
+    {
+        title: 'CardID',
+        align: 'start',
+        sortable: true,
+        key: 'CardID',
+    },
+    { title: 'CardName', align: 'end', key: 'card_name' },
+    { title: 'CardCharacter', align: 'end', key: 'card_character' },
+    { title: 'CardType', align: 'end', key: 'card_type' },
+    { title: 'CardCondition', align: 'end', key: 'card_condition' },
+    { title: 'OtherInfo', align: 'end', key: 'other_info' },
+])
+
 
 let cardExpandList = $ref([])
 // methods
 
+const requestWithParams = async (path, params) => {
+    let encodedParams = {};
+    for (let key in params) {
+        encodedParams[key] = encodeURIComponent(params[key]);
+    }
 
-//request page data from server
-const getTableData = async (page_num = 1) => {
-    let res = await request.get("/list", {
-        pageSize: 1000,
+    let res = await request.get(path, encodedParams);
+    return res;
+}
+
+//获取所有卡片信息
+const getCardInfoList = async (page_num = 1) => {
+    let params = {
+        pageSize: 100,
         pageNum: page_num
-    })
+    };
+    let res = await requestWithParams(`/data/list`, params);
+
     // Filter out items with card_name as "none"
     const filteredData = res.data.data.filter(item => item.card_name !== "None");
 
-    // Update tableData with filteredData
-    tableData = filteredData;
-    console.log("init tableData:", res)
+    // Update CardInfoList with filteredData
+    CardInfoList = filteredData;
+    console.log("get CardInfoList:", res)
 
-    for (let i = 0; i < tableData.length; i++) {
+    for (let i = 0; i < CardInfoList.length; i++) {
         cardExpandList.push(false)
     }
-    console.log("init cardExpandList:", cardExpandList)
-}
-//init table data
-getTableData()
-
-
-// delete row from server
-const handleDelRow = async (row) => {
-    await request.delete(`/delete/${row.ID}`)
-    await getTableData(curPage)
+    // console.log("init cardExpandList:", cardExpandList)
 }
 
-// delete mutiple rows from server
-const handleDelMultiRows = () => {
-    multipleTableSelection.forEach(row => {
-        handleDelRow(row)
-    })
-    multipleTableSelection = []
-}
-
-
-// add
-const handleAdd = () => {
-    addDialogVisible = true
-    dialogType = "add"
-    tableRowData = {}
-}
 
 //download
 const hanleDownload = async () => {
-    await axios.get("/user/download", {
+    await axios.get("/test/download", {
         responseType: "blob"
     }).then(res => {
         const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -89,22 +90,24 @@ const hanleDownload = async () => {
         document.body.appendChild(link);
         link.click();
     })
-
+    
 }
 
-//edit
-
-// confirm add or edit data
-
-//search
-const handleSearch = async () => {
+//搜索CN和QQ对应的谷子
+const handleSearchCNorQQ = async () => {
     // search from server
     if (searchInput.length > 0) {
-        let res = await request.get(`/list/${searchInput}`)
-        tableData = res.data
+        let params = {
+            cn: searchInput,
+            qq: searchInput
+        };
+        let res = await requestWithParams(`/data/search`, params);
+        console.log("search res:", res.data)
+        CardInfoList = res.data
+        console.log("search CardInfoList:", CardInfoList)
     }
     else {
-        await getTableData(curPage)
+        await getCardInfoList()
     }
 }
 
@@ -113,6 +116,9 @@ const handleCardListClick = (index) => {
     cardExpandList[index] = !cardExpandList[index]
 }
 
+
+//初始化所有谷子信息
+getCardInfoList()
 </script>
 
 <template>
@@ -125,25 +131,24 @@ const handleCardListClick = (index) => {
         <!-- query -->
         <h3>请再次输入CN或QQ（注：只显示已到货且能发货的！！）</h3>
         <div class="query-box">
-            <v-text-field label="CN或QQ" class="search-input" @input="handleSearch" v-model="searchInput"></v-text-field>
+            <v-text-field label="CN或QQ" class="search-input" @input="handleSearchCNorQQ"
+            v-model="searchInput"></v-text-field>
             <div class="btn-list">
-                <v-btn @click="handleAdd" color="red-lighten-1">Add</v-btn>
                 <v-btn @click="hanleDownload" color="green-darken-2">Download</v-btn>
-                <v-btn v-if="multipleTableSelection.length > 0" @click="handleDelMultiRows">Delete</v-btn>
             </div>
         </div>
 
         <!-- table -->
-        <!-- <div class="table-container">
-            <v-data-table-virtual class="card-table" :headers="tableHeaders" :items="tableData"></v-data-table-virtual>
-        </div> -->
+        <div class="table-container">
+            <v-data-table-virtual class="card-table" :headers="tableHeaders" :items="CardInfoList"></v-data-table-virtual>
+        </div>
 
         <v-container class="card-list-container">
             <v-card>
                 <v-list>
                     <v-list-subheader>Card List</v-list-subheader>
 
-                    <v-list-item v-for="(item, i) in tableData" :key="i" :value="item" color="grey lighten-2"
+                    <v-list-item v-for="(item, i) in CardInfoList" :key="i" :value="item" color="blue-lighten-3"
                         @click="handleCardListClick(i)">
                         <v-card>
                             <v-card-title>
@@ -153,13 +158,12 @@ const handleCardListClick = (index) => {
                             <v-card-text>
                                 <v-list-item-title>CardID: {{ item.CardID }}</v-list-item-title>
                                 <v-list-item-subtitle>CardType: {{ item.card_type }}</v-list-item-subtitle>
-                                <v-list-item-subtitle>CardCondition: {{ item.card_condition
+                                <v-list-item-subtitle>CardCondition: {{ item.card_condition }}</v-list-item-subtitle>
+                                <v-list-item-subtitle v-show="item.card_num">CardNum:{{ item.card_num
                                 }}</v-list-item-subtitle>
                                 <v-list-item-subtitle>OtherInfo: {{ item.other_info }}</v-list-item-subtitle>
                             </v-card-text>
                             <v-card-actions>
-                                <!-- <v-btn color="red" text @click="handleDelRow(item)">Delete</v-btn> -->
-                                <!-- <v-btn color="green" text @click="handleEdit(item)">Edit</v-btn> -->
                             </v-card-actions>
 
                         </v-card>
@@ -174,38 +178,7 @@ const handleCardListClick = (index) => {
             </v-card>
         </v-container>
     </div>
-    <!-- Form -->
-    <!-- <el-dialog @keyup.enter="handleDialogConfirm" v-model="addDialogVisible" :title="dialogType === 'add' ? 'add' : 'edit'"
-        draggable>
-        <el-form v-model="tableRowData" :label-position="addDialogLabelPosition" :label-width="120">
-            <el-form-item label="CardID">
-                <el-input v-model="tableRowData.card_id" autocomplete="off" />
-            </el-form-item>
-            <el-form-item label="card_name">
-                <el-input v-model="tableRowData.card_name" autocomplete="off" />
-            </el-form-item>2
-            <el-form-item label="card_character">
-                <el-input v-model="tableRowData.card_character" autocomplete="off" />
-            </el-form-item>
-            <el-form-item label="card_type">
-                <el-input v-model="tableRowData.card_type" autocomplete="off" />
-            </el-form-item>
-            <el-form-item label="card_condition">
-                <el-input v-model="tableRowData.card_condition" autocomplete="off" />
-            </el-form-item>
-            <el-form-item label="other_info">
-                <el-input v-model="tableRowData.other_info" autocomplete="off" />
-            </el-form-item>
-        </el-form>
-        <template #footer>
-            <span class="dialog-footer">
-                <v-btn @click="addDialogVisible = false">Cancel</v-btn>
-                <v-btn  @click="handleDialogConfirm">
-                    Confirm
-                </v-btn>
-            </span>
-        </template>
-    </el-dialog> -->
+
     <v-container class="bg-surface-variant">
         <v-row no-gutters>
             <v-col>

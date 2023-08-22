@@ -9,6 +9,17 @@ type PersonInfo struct {
     QQ       string `gorm:"type:varchar(255); not null" json:"qq" binding:"required"`
 }
 
+//查询用结构体
+type CardInfoRes struct {
+	CardID        string
+	Card_name      string `json:"card_name" binding:"required"`
+	Card_character string `json:"card_character" binding:"required"`
+	Card_type      string `json:"card_type" binding:"required"`
+	Card_condition string `json:"card_condition" binding:"required"`
+	Card_num       string `json:"card_num" binding:"required"`
+	Other          string `json:"other" binding:"required"`
+}
+
 type CardInfo struct {
 	gorm.Model
     CardID         string `gorm:"primary_key"`

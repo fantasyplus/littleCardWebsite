@@ -3,21 +3,14 @@ package processdata
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
-
-func UpdateDataBase(){
-	db := ConnectDB()
-	CreateTable(db)
-	person_id2card_ids2card_num, card_id2card_name, card_id2person_ids2status := InsertPersonInfoTable(db)
-	InsertCardIndexTable(db, person_id2card_ids2card_num)
-	InsertCardInfoTable(db)
-	InsertCardNoTable(db, person_id2card_ids2card_num, card_id2card_name, card_id2person_ids2status)
-}
 
 func ConnectDB() *gorm.DB {
 	dsn := "root:yxdbc2008@tcp(127.0.0.1:3306)/non_commercial_test?charset=utf8mb4&parseTime=True&loc=Local"
@@ -29,6 +22,19 @@ func ConnectDB() *gorm.DB {
 	if err != nil {
 		panic("failed to connect database")
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		panic("获取数据库连接失败")
+	}
+
+	// SetMaxIdleConns sets the maximum number of connections in the idle connection pool.
+	sqlDB.SetMaxIdleConns(10)
+
+	// SetMaxOpenConns sets the maximum number of open connections to the database.
+	sqlDB.SetMaxOpenConns(100)
+
+	// SetConnMaxLifetime sets the maximum amount of time a connection may be reused.
+	sqlDB.SetConnMaxLifetime(10 * time.Second)
 
 	return db
 }
@@ -198,7 +204,7 @@ func InsertCardInfoTable(db *gorm.DB) {
 	}
 }
 
-//获取某个人对应的某个谷子的状态
+// 获取某个人对应的某个谷子的状态
 func getStatus(
 	card_id2person_ids2status map[string][]map[uint]string,
 	card_id string,
@@ -244,7 +250,7 @@ func InsertCardNoTable(
 					PersonID: int(person_id),
 					CardName: card_id2card_name[card_id],
 					CardNum:  item[card_id],
-					Status:   getStatus(card_id2person_ids2status,card_id,person_id),
+					Status:   getStatus(card_id2person_ids2status, card_id, person_id),
 				}
 
 				tableName := fmt.Sprintf("cardNo%s", card_id)
@@ -260,9 +266,10 @@ func InsertCardNoTable(
 	}
 }
 
-func FindCardInfoByCNQQ(db *gorm.DB, cn, qq string) [][]interface{} {
+func FindCardInfoByCNQQ(db *gorm.DB, cn, qq string) []CardInfoRes {
 	fmt.Printf("-----查找%s的谷子-----\n", cn)
 
+	var cardInfoRes []CardInfoRes
 	// 查找 person_id
 	var personInfo []PersonInfo
 	db.Where("cn = ? OR qq = ?", cn, qq).Find(&personInfo)
@@ -290,7 +297,7 @@ func FindCardInfoByCNQQ(db *gorm.DB, cn, qq string) [][]interface{} {
 				card_num = cardno.CardNum + card_num
 				card_name = cardno.CardName
 			}
-			fmt.Printf("序号:%s, 谷子名:%s, 谷子数量:%d ", card_id, card_name, int(card_num))
+			// fmt.Printf("序号:%s, 谷子名:%s, 谷子数量:%d ", card_id, card_name, int(card_num))
 
 			//预处理，如果是一对多的情况，card_id为(19_1,1_1形式)，改成19,1
 			//因为card_info表里的card_id是不带下划线的
@@ -300,13 +307,22 @@ func FindCardInfoByCNQQ(db *gorm.DB, cn, qq string) [][]interface{} {
 
 			var cardinfo CardInfo
 			db.Where("card_id = ?", card_id).Find(&cardinfo)
-			fmt.Printf("角色:%s, 制品:%s, 状态:%s, 备注:%s\n",
-				cardinfo.CardCharacter, cardinfo.CardType, cardinfo.CardCondition, cardinfo.Other)
+			// fmt.Printf("角色:%s, 制品:%s, 状态:%s, 备注:%s\n",
+			// cardinfo.CardCharacter, cardinfo.CardType, cardinfo.CardCondition, cardinfo.Other)
+
+			cardInfoRes = append(cardInfoRes, CardInfoRes{
+				CardID:         card_id,
+				Card_name:      card_name,
+				Card_num:       strconv.Itoa(int(card_num)),
+				Card_character: cardinfo.CardCharacter,
+				Card_type:      cardinfo.CardType,
+				Card_condition: cardinfo.CardCondition,
+				Other:          cardinfo.Other,
+			})
 		}
 	}
 
-	res := [][]interface{}{}
-	return res
+	return cardInfoRes
 }
 
 // 根据cn和qq和cardInfo更新谷子状态，必须要是cardInfo里已发货的谷子才能更新

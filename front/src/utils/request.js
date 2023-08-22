@@ -21,7 +21,7 @@ import axios from "axios"
 
 // 全局配置
 const service = axios.create({
-    baseURL: '/user', // 根路径
+    baseURL: '/v1', // 根路径
     timeout: 8000  // 请求超时时间
 })
 
@@ -30,13 +30,13 @@ service.interceptors.response.use(res => {
     const { code, message, data } = res.data
     if (code === 200) {
         //request success
-        // ElMessage.success(message)
+        console.log(message)
         
         return { code, data }
     }
     else if (code === 400) {
         //request fail
-        // ElMessage.error(message)
+        console.log(message)
     }
 })
 

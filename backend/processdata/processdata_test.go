@@ -64,7 +64,7 @@ func TestLqbz(t *testing.T) {
 	db := processdata.ConnectDB()
 
 	//执行python脚本，从网站下载数据并读取数据
-	_, sell_data_path := processdata.ExecPythonScript("DownloadAndRead.py")
+	_, sell_data_path := processdata.DownloadAndRead("DownloadAndRead.py")
  
 	//根据excel文件更新数据库
 	processdata.UpdateDataBase()

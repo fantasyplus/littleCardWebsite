@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-func ExecPythonScript(name string) (card_data_path string, sell_data_path string) {
+func DownloadAndRead(name string) (card_data_path string, sell_data_path string) {
 	// 设置要执行的Python脚本路径和参数
-	pythonScript := "/home/web/web/web-project/backend/processdata/data/scripts/" + name
+	pythonScript := "./data/scripts/" + name
     cmd := exec.Command("python3", pythonScript)
     
     // 创建管道来捕获标准输出
@@ -56,4 +56,12 @@ func ExecPythonScript(name string) (card_data_path string, sell_data_path string
 	return card_data_path, sell_data_path
 }
 
+func UpdateDataBase(){
+	db := ConnectDB()
+	CreateTable(db)
+	person_id2card_ids2card_num, card_id2card_name, card_id2person_ids2status := InsertPersonInfoTable(db)
+	InsertCardIndexTable(db, person_id2card_ids2card_num)
+	InsertCardInfoTable(db)
+	InsertCardNoTable(db, person_id2card_ids2card_num, card_id2card_name, card_id2person_ids2status)
+}
 
