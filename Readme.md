@@ -39,4 +39,4 @@ CREATE TABLE cardNo{} (
 
 
 
-rsync -avr --delete dist/ ubuntu@myweb:/home/ubuntu/littleCardWebsite/front/dist/
+rsync -avr --delete dist/ ubuntu@myweb:/home/ubuntu/littleCardWebsite/front/dist/rsync -avr --delete dist/ ubuntu@myweb:/home/ubuntu/littleCardWebsite/front/dist/

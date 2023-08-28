@@ -29,6 +29,7 @@ func (dc *DataController) SearchCardInfos(c *gin.Context) {
 	decodedQQ, _ := url.QueryUnescape(qq) // URL解码
 
 	res := processdata.FindCardInfoByCNQQ(dc.db, decodedCN, decodedQQ)
+	
 	// fmt.Println(res)
 	if len(res) == 0 {
 		c.JSON(http.StatusOK, gin.H{

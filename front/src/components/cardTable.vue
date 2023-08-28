@@ -7,7 +7,14 @@ import axios from "axios"
 import { VDataTableVirtual } from 'vuetify/labs/VDataTable'
 
 // data
-let searchInput = $ref("")
+let currentView = $ref("list")
+let CNInput = $ref("")
+let QQInput = $ref("")
+let showSearchData = $ref(false)
+let selectedCardsInfo = $ref([])
+let cardExpandList = $ref([])
+let cardSelectedInfo = $ref("全部发货")
+let cardSelectedList = $ref([])
 //卡片的基础信息
 let CardInfoList = $ref([{
     CardID: "",
@@ -16,17 +23,9 @@ let CardInfoList = $ref([{
     card_type: "",
     card_condition: "",
     card_num: "",
+    card_deliver: "",
     other_info: "",
 }])
-let CardInfo = $ref({
-    CardID: "",
-    card_name: "",
-    card_character: "",
-    card_type: "",
-    card_condition: "",
-    card_num: "",
-    other_info: "",
-})
 
 const tableHeaders = $ref([
     {
@@ -39,11 +38,11 @@ const tableHeaders = $ref([
     { title: 'CardCharacter', align: 'end', key: 'card_character' },
     { title: 'CardType', align: 'end', key: 'card_type' },
     { title: 'CardCondition', align: 'end', key: 'card_condition' },
+    { title: 'CardNum', align: 'end', key: 'card_num' },
+    { title: 'CardDeliver', align: 'end', key: 'card_deliver' },
     { title: 'OtherInfo', align: 'end', key: 'other_info' },
 ])
 
-
-let cardExpandList = $ref([])
 // methods
 
 const requestWithParams = async (path, params) => {
@@ -73,6 +72,7 @@ const getCardInfoList = async (page_num = 1) => {
 
     for (let i = 0; i < CardInfoList.length; i++) {
         cardExpandList.push(false)
+        cardSelectedList.push(false)
     }
     // console.log("init cardExpandList:", cardExpandList)
 }
@@ -90,21 +90,29 @@ const hanleDownload = async () => {
         document.body.appendChild(link);
         link.click();
     })
-    
+
 }
 
 //搜索CN和QQ对应的谷子
 const handleSearchCNorQQ = async () => {
     // search from server
-    if (searchInput.length > 0) {
+    if (CNInput.length > 0 || QQInput.length > 0) {
         let params = {
-            cn: searchInput,
-            qq: searchInput
+            cn: CNInput,
+            qq: QQInput
         };
         let res = await requestWithParams(`/data/search`, params);
-        console.log("search res:", res.data)
+        // console.log("search res:", res.data)
         CardInfoList = res.data
-        console.log("search CardInfoList:", CardInfoList)
+        // console.log("search CardInfoList:", CardInfoList)
+        if (res.code === 400) {
+            showSearchData = false
+            // alert("没有找到对应的谷子")
+        }
+        else if (res.code === 200) {
+            showSearchData = true
+            // alert("找到对应的谷子")
+        }
     }
     else {
         await getCardInfoList()
@@ -117,128 +125,212 @@ const handleCardListClick = (index) => {
 }
 
 
+const handleCardCheckBoxClick = (item, index) => {
+    cardSelectedList[index] = !cardSelectedList[index]
+
+    if (cardSelectedList[index]) {
+        selectedCardsInfo.push(item)
+        // selectedCardsInfo.push()
+    }
+    else {
+        const filteredData = selectedCardsInfo.filter((value) => {
+            return value.CardID !== item.CardID
+        })
+        selectedCardsInfo = filteredData
+    }
+    // console.log(selectedCardsInfo)
+}
+
+//把用户选择的谷子信息发送到后端
+//后端根据这些谷子修改状态（发货或其他）
+const handleSaveSelectedCards = () => {
+    console.log(selectedCardsInfo)
+}
+
+const handleGenerateDeliverList = () => {
+    console.log("handleGenerateDeliverList")
+}
+
 //初始化所有谷子信息
 getCardInfoList()
 </script>
 
 <template>
-    <!-- test -->
-    <div class="table-box">
-        <!-- Title -->
-        <div class="title">
-            <h2>到货List</h2>
-        </div>
-        <!-- query -->
-        <h3>请再次输入CN或QQ（注：只显示已到货且能发货的！！）</h3>
+    <div class="search-box">
+
         <div class="query-box">
-            <v-text-field label="CN或QQ" class="search-input" @input="handleSearchCNorQQ"
-            v-model="searchInput"></v-text-field>
+            <div class="title">
+                <h2>到货List</h2>
+            </div>
+            <h3>请再次输入CN或QQ（注：只显示已到货且能发货的！！）</h3>
+            <div class="input-box">
+                <v-text-field label="CN" class="search-input" v-model="CNInput" color="light-blue-lighten-1"></v-text-field>
+                <v-text-field label="QQ" class="search-input" v-model="QQInput" color="light-blue-lighten-1"></v-text-field>
+            </div>
+
             <div class="btn-list">
-                <v-btn @click="hanleDownload" color="green-darken-2">Download</v-btn>
+                <v-btn @click="handleSearchCNorQQ" color="blue-lighten-2" style="width: 100px">搜索</v-btn>
+                <!-- <v-btn @click="hanleDownload" color="green-darken-2">下载</v-btn> -->
             </div>
         </div>
 
-        <!-- table -->
-        <div class="table-container">
-            <v-data-table-virtual class="card-table" :headers="tableHeaders" :items="CardInfoList"></v-data-table-virtual>
-        </div>
 
-        <v-container class="card-list-container">
-            <v-card>
-                <v-list>
-                    <v-list-subheader>Card List</v-list-subheader>
+        <div v-if="showSearchData">
+            <div class="toggle-icons" style="display: flex; justify-content: flex-end; align-items: flex-start;">
+                <v-icon @click="currentView = 'list'">mdi-menu</v-icon>
+                <v-icon @click="currentView = 'table'">mdi-apps
+                    <v-tooltip activator="parent" location="top">Tooltip</v-tooltip>
+                </v-icon>
+            </div>
+
+            <!-- <div class="table-container" v-if="currentView === 'table'"> -->
+            <!-- <v-data-table-virtual class="card-table" :headers="tableHeaders"
+                    :items="CardInfoList"></v-data-table-virtual> -->
+            <!-- </div> -->
+
+            <!-- <v-container class="card-list-container" v-if="currentView === 'list'" style="width:100%"> -->
+                <!-- <v-card> -->
+                <v-list v-if="currentView === 'list'" style="width:100%">
+                    <v-list-subheader>谷子清单</v-list-subheader>
 
                     <v-list-item v-for="(item, i) in CardInfoList" :key="i" :value="item" color="blue-lighten-3"
-                        @click="handleCardListClick(i)">
-                        <v-card>
-                            <v-card-title>
-                                <v-list-item-title>{{ item.card_name }}</v-list-item-title>
-                                <v-list-item-subtitle>{{ item.card_character }}</v-list-item-subtitle>
-                            </v-card-title>
-                            <v-card-text>
-                                <v-list-item-title>CardID: {{ item.CardID }}</v-list-item-title>
-                                <v-list-item-subtitle>CardType: {{ item.card_type }}</v-list-item-subtitle>
-                                <v-list-item-subtitle>CardCondition: {{ item.card_condition }}</v-list-item-subtitle>
-                                <v-list-item-subtitle v-show="item.card_num">CardNum:{{ item.card_num
-                                }}</v-list-item-subtitle>
-                                <v-list-item-subtitle>OtherInfo: {{ item.other_info }}</v-list-item-subtitle>
-                            </v-card-text>
-                            <v-card-actions>
-                            </v-card-actions>
+                         style="width:100%">
+                        <v-row >
+                            <v-col :cols="cardSelectedList[i] ? 6 : 9">
+                                <v-card @click="handleCardListClick(i)" @click.stop style="width:100%">
+                                    <v-row>
+                                        <v-col cols="6" class="d-flex align-center">
+                                            <v-card-title class="card-fancy-title">
+                                                <v-list-item-title>{{ item.card_name }}</v-list-item-title>
+                                                <v-list-item-subtitle>{{ item.card_character }}</v-list-item-subtitle>
+                                                <v-list-item-subtitle v-if="cardSelectedList[i]" class="d-flex align-center">
+                                                数量:{{ item.card_num }}</v-list-item-subtitle>
+                                            </v-card-title>
+                                        </v-col>
+                                        <v-col cols="3" v-if="!cardSelectedList[i]" class="d-flex align-center">
+                                            <v-card-title class="card-fancy-title">
+                                                <v-list-item-title>数量:{{ item.card_num }}</v-list-item-title>
+                                            </v-card-title>
+                                        </v-col>
+                                        <v-col :cols="cardSelectedList[i] ? 6 : 2" class="d-flex align-center">
+                                            <v-img src="https://cdn.vuetifyjs.com/images/cards/foster.jpg" width="auto"
+                                                height="auto"></v-img>
+                                        </v-col>
+                                    </v-row>
+                                </v-card>
+                            </v-col>
 
-                        </v-card>
+                            <v-col :cols="cardSelectedList[i] ? 6 : 3" class="d-flex align-center">
+                                <v-row>
+                                    <v-col cols="2">
+                                        <v-btn @click.stop v-model="cardSelectedList[i]"
+                                            @click="handleCardCheckBoxClick(item, i)"></v-btn>
+                                    </v-col>
+                                    <v-col cols="10">
+                                        <v-text-field @click.stop v-if="cardSelectedList[i]" v-model="cardSelectedInfo"
+                                            label="默认为全发" color="light-blue-lighten-1"></v-text-field>
+                                    </v-col>
+                                </v-row>
+                            </v-col>
+                        </v-row>
 
-                        <v-expand-transition>
-                            <v-img v-show="cardExpandList[i]" src="https://cdn.vuetifyjs.com/images/cards/foster.jpg"
-                                width="100%" height="auto"></v-img>
-                        </v-expand-transition>
+                        <div class="card-overlay">
+                            <v-overlay v-model="cardExpandList[i]" activator="parent" location-strategy="connected"
+                                location="top center" origin="auto" scroll-strategy="none" absolute>
+                                <v-card>
+                                    <!-- <v-col no-gutters> -->
+                                    <v-col>
+                                        <v-sheet class="pa-2 ma-2">
+                                            <v-card-title>
+                                                <v-list-item-title>{{ item.card_name }}</v-list-item-title>
+                                                <v-list-item-subtitle>{{ item.card_character
+                                                }}</v-list-item-subtitle>
+                                            </v-card-title>
+                                            <v-card-text>
+                                                <v-list-item-title>CardID: {{ item.CardID }}</v-list-item-title>
+                                                <v-list-item-subtitle>CardType: {{ item.card_type
+                                                }}</v-list-item-subtitle>
+                                                <v-list-item-subtitle>CardCondition: {{ item.card_condition
+                                                }}</v-list-item-subtitle>
+                                                <v-list-item-subtitle v-show="item.card_num">CardNum:{{
+                                                    item.card_num
+                                                }}</v-list-item-subtitle>
+                                                <v-list-item-subtitle>CardDeliver: {{ item.card_deliver
+                                                }}</v-list-item-subtitle>
+                                                <v-list-item-subtitle>OtherInfo: {{ item.other_info
+                                                }}</v-list-item-subtitle>
+                                            </v-card-text>
+                                        </v-sheet>
+                                    </v-col>
+                                    <v-col>
+                                        <v-sheet class="pa-2 ma-2">
+                                            <v-img src="https://cdn.vuetifyjs.com/images/cards/foster.jpg" width="100%"
+                                                height="auto"></v-img>
+                                        </v-sheet>
+                                    </v-col>
+                                </v-card>
+                            </v-overlay>
+                        </div>
                     </v-list-item>
+                    <div style="display: flex; align-items: center;gap: 10px;width: 100%; justify-content: center;">
+                        <v-btn @click="handleSaveSelectedCards" color="blue-lighten-1">确认</v-btn>
+                        <v-btn @click="handleGenerateDeliverList" color="blue-lighten-1">生成发货list</v-btn>
+                    </div>
 
                 </v-list>
-            </v-card>
-        </v-container>
+                <!-- </v-card> -->
+            <!-- </v-container> -->
+        </div>
     </div>
-
-    <v-container class="bg-surface-variant">
-        <v-row no-gutters>
-            <v-col>
-                <v-sheet class="pa-2 ma-2">
-                    .v-col-auto
-                </v-sheet>
-            </v-col>
-            <v-col>
-                <v-sheet class="pa-2 ma-2">
-                    .v-col-auto
-                </v-sheet>
-            </v-col>
-        </v-row>
-
-        <v-row no-gutters>
-            <v-col>
-                <v-sheet class="pa-2 ma-2">
-                    .v-col-auto
-                </v-sheet>
-            </v-col>
-            <v-col>
-                <v-sheet class="pa-2 ma-2">
-                    .v-col-auto
-                </v-sheet>
-            </v-col>
-            <v-col>
-                <v-sheet class="pa-2 ma-2">
-                    .v-col-auto
-                </v-sheet>
-            </v-col>
-        </v-row>
-
-        <v-row no-gutters>
-            <v-col cols="2">
-                <v-sheet class="pa-2 ma-2">
-                    .v-col-2
-                </v-sheet>
-            </v-col>
-            <v-col>
-                <v-sheet class="pa-2 ma-2">
-                    .v-col-auto
-                </v-sheet>
-            </v-col>
-        </v-row>
-    </v-container>
-    <router-link to="/">
-        <v-btn>
-            返回
-        </v-btn>
-    </router-link>
 </template>
 
 <style scoped>
+.search-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    /* background-color: #f7f7f7; */
+    padding: 20px;
+}
+
 .title {
     text-align: center;
 }
 
 .query-box {
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.input-box {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+}
+
+.search-input {
+    /* width: 200px; */
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.btn-list {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+}
+
+.card-fancy-title {
+    font-size: calc(1em + 1vw);
+    /* 使用基本大小和基于视口宽度的大小组合 */
+    color: #506eae;
+    /* 设置字体颜色 */
 }
 </style>

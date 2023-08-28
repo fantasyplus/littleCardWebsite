@@ -17,6 +17,7 @@ type CardInfoRes struct {
 	Card_type      string `json:"card_type" binding:"required"`
 	Card_condition string `json:"card_condition" binding:"required"`
 	Card_num       string `json:"card_num" binding:"required"`
+    Card_deliver   string `json:"card_deliver" binding:"required"`
 	Other          string `json:"other" binding:"required"`
 }
 

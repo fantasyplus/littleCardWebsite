@@ -313,10 +313,11 @@ func FindCardInfoByCNQQ(db *gorm.DB, cn, qq string) []CardInfoRes {
 			cardInfoRes = append(cardInfoRes, CardInfoRes{
 				CardID:         card_id,
 				Card_name:      card_name,
-				Card_num:       strconv.Itoa(int(card_num)),
 				Card_character: cardinfo.CardCharacter,
 				Card_type:      cardinfo.CardType,
 				Card_condition: cardinfo.CardCondition,
+				Card_num:       strconv.Itoa(int(card_num)),
+				Card_deliver:   cardno[0].Status,
 				Other:          cardinfo.Other,
 			})
 		}

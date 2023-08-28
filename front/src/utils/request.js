@@ -31,12 +31,13 @@ service.interceptors.response.use(res => {
     if (code === 200) {
         //request success
         console.log(message)
-        
+
         return { code, data }
     }
     else if (code === 400) {
         //request fail
         console.log(message)
+        return { code }
     }
 })
 
