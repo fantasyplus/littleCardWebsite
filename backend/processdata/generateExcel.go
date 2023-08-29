@@ -177,27 +177,37 @@ func SaveExcelFile(f *excelize.File, origin_name string) {
 func GenerateSingleTypeSheet(db *gorm.DB, card_data []CardNo, full_name string, f *excelize.File) {
 	//设置sheet名
 	f.NewSheet(full_name)
-	f.SetColWidth(full_name, "A", "A", 30)
+	f.SetColWidth(full_name, "A", "A", 20)
+	f.SetColWidth(full_name, "B", "B", 20)
 
-	//设置表头
+	//设置cn表头
 	SetCellValueWithErrHandle(f, full_name, "A1", full_name)
+	//设置qq表头
+	SetCellValueWithErrHandle(f, full_name, "B1", "qq")
 	//数量列表头
-	SetCellValueWithErrHandle(f, full_name, "B1", "数量")
+	SetCellValueWithErrHandle(f, full_name, "C1", "数量")
 	//状态列表头
-	SetCellValueWithErrHandle(f, full_name, "C1", "状态")
+	SetCellValueWithErrHandle(f, full_name, "D1", "状态")
 
 	//设置数据
 	for index, data := range card_data {
-		cn_qq := getCNQQ(db, data.PersonID)
+		// cn_qq := getCNQQ(db, data.PersonID)
+
+		var person_info PersonInfo
+		db.Where("id = ?", data.PersonID).Find(&person_info)
+		cn := person_info.CN
+		qq := person_info.QQ
+
 		num := data.CardNum
 		status := data.Status
 		if status == "none" {
 			status = ""
-		} 
-		
-		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("A%d", index+2), cn_qq)
-		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("B%d", index+2), num)
-		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("C%d", index+2), status)
+		}
+
+		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("A%d", index+2), cn)
+		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("B%d", index+2), qq)
+		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("C%d", index+2), num)
+		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("D%d", index+2), status)
 	}
 }
 
@@ -227,7 +237,7 @@ func GetCharacterCell(character_list []string, card_name string, row int) string
 
 	for index := range character_list {
 		if character_list[index] == character_name {
-			cell_name = fmt.Sprintf("%c%d", 'A'+index+1, row)
+			cell_name = fmt.Sprintf("%c%d", 'B'+index+1, row)
 			break
 		}
 	}
@@ -242,7 +252,13 @@ func SetMultiTypeData(db *gorm.DB, item [][]CardNo, sheet_name string, character
 	total_row := 2
 	for _, datas := range item {
 		for _, data := range datas {
-			cn_qq := getCNQQ(db, data.PersonID)
+			// cn_qq := getCNQQ(db, data.PersonID)
+
+			var person_info PersonInfo
+			db.Where("id = ?", data.PersonID).Find(&person_info)
+			cn := person_info.CN
+			qq := person_info.QQ
+
 			num := data.CardNum
 			status := data.Status
 			if status == "none" {
@@ -267,12 +283,14 @@ func SetMultiTypeData(db *gorm.DB, item [][]CardNo, sheet_name string, character
 
 				//获得当前角色名对应的位置
 				cell_name_character = GetCharacterCell(character_list, data.CardName, total_row)
-				//设置cnqq
-				SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("A%d", total_row), cn_qq)
+				//设置cn
+				SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("A%d", total_row), cn)
+				//设置qq
+				SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("B%d", total_row), qq)
 				//设置数量
 				SetCellValueWithErrHandle(f, sheet_name, cell_name_character, num)
 				//设置状态
-				SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("%c%d", 'A'+len(character_list)+1, total_row), status)
+				SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("%c%d", 'B'+len(character_list)+1, total_row), status)
 
 				// fmt.Println("one", data.CardName, cn_qq, cell_name_character, num)
 
@@ -314,19 +332,22 @@ func GenerateMultiTypeSheet(db *gorm.DB, multi_character_infos [][]interface{}, 
 		sheet_name := full_name_map[card_id]
 		//设置sheet名
 		f.NewSheet(sheet_name)
-		f.SetColWidth(sheet_name, "A", "A", 30)
+		f.SetColWidth(sheet_name, "A", "A", 20)
+		f.SetColWidth(sheet_name, "B", "B", 20)
 
-		//设置表头
+		//设置cn表头
 		SetCellValueWithErrHandle(f, sheet_name, "A1", sheet_name)
+		//设置qq表头
+		SetCellValueWithErrHandle(f, sheet_name, "B1", "qq")
 
 		//设置角色名（数量列表头）
 		for index, character_name := range character_list {
-			cell_name := fmt.Sprintf("%c1", 'A'+index+1)
+			cell_name := fmt.Sprintf("%c1", 'B'+index+1)
 			SetCellValueWithErrHandle(f, sheet_name, cell_name, character_name)
 		}
 
 		//状态列表头
-		SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("%c1", 'A'+len(character_list)+1), "状态")
+		SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("%c1", 'B'+len(character_list)+1), "状态")
 
 		//设置数据部分
 		SetMultiTypeData(db, item, sheet_name, character_list, f)
@@ -345,7 +366,7 @@ func GenerateSellExcel(db *gorm.DB, origin_sell_data_path string) {
 	f := excelize.NewFile()
 
 	//先把原表中和数据无关的sheet加进来
-	MoveSheetFromOriginExcel(origin_sell_data_path, f, 4)
+	MoveSheetFromOriginExcel(origin_sell_data_path, f, 3)
 
 	var tableNames []string
 	tableNames, _ = db.Migrator().GetTables()

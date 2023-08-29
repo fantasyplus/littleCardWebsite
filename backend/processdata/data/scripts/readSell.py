@@ -59,8 +59,15 @@ def processString(input_string):
 
     cn_qq_str = match.group(1)
 
-    # 特殊情况，cn也全是数字
-    digit_pattern = r"^(\d+)[\+\＋](\d+)$"
+    # 特殊情况1：cn和qq之间只用一个特殊字符分隔
+    separators = r"[\+\＋\-\－\—\,\，\s\;\；]"
+    simple_pattern = rf"^(.+?){separators}(\d+)$"
+    match = re.match(simple_pattern, cn_qq_str)
+    if match:
+        return match.group(1), match.group(2)
+
+    # 特殊情况2，cn也全是数字
+    digit_pattern = rf"^(\d+){separators}(\d+)$"
     match = re.match(digit_pattern, cn_qq_str)
     # 直接返回cn和qq全是数字的情况
     if match:
@@ -77,7 +84,7 @@ def processString(input_string):
         # 适用于只写了cn没有qq的情况
         cn = matches[0][0] or matches[0][1]
         cn = cn.strip()  # 移除两端的空白字符
-        if cn.endswith(("+", "＋")):
+        if cn.endswith(("+", "＋", "-", "－", "—", ",", "，",";", "；")):
             cn = cn[:-1]
 
     # 如果没有提取到 cn
@@ -143,8 +150,8 @@ def readSellInfo(path):
     # p = path.dirname(__file__) + "/../test_excel/" + excel_name
     # 读取Excel文件
     wb = openpyxl.load_workbook(path, data_only=False)
-    sheet_names = wb.sheetnames[5:]
-
+    sheet_names = wb.sheetnames[3:]
+    print(sheet_names)
     # 一个表格的所有谷子信息
     # 每一个元素对应一种谷子的信息
     # 如果长度为1，说明是一个谷子对应一个角色的情况（正常情况）
@@ -203,7 +210,6 @@ def readSellInfo(path):
         elif condition_index == 3:
             # 单种谷子的数据
             single_sheet_data = []
-            print(sheet)
 
             # 读取整个工作表的数据
             for row in sheet.iter_rows():
@@ -212,7 +218,6 @@ def readSellInfo(path):
                     break
 
                 processRow(row, single_sheet_data)
-
             # 插入单个子表数据
             sheetdatas.extend(single_sheet_data)
 
@@ -232,10 +237,14 @@ def writeJsonFile(json_name, excel_data):
             # print(excel_data[i])
             split_points.append(i)
 
+    # 在 split_points 列表末尾添加 excel_data 的长度
+    # 为了能够在下面的循环中把最后一个谷子的数据也加入字典
+    split_points.append(len(excel_data))
     dict_data = {}
     for i in range(len(split_points) - 1):
         split_index = split_points[i]
         id_and_name = excel_data[split_index][0]
+        # print(id_and_name)
 
         # 如果长度为2，说明是标题行，获取了card_name和card_id就进行下一次循环
         match1 = re.search(r"\d+", id_and_name)
@@ -268,7 +277,7 @@ if __name__ == "__main__":
     file_name = (
         path.dirname(__file__)
         + "/../test_excel/selldata/"
-        + "selldata_2023_08_29_11.xlsx"
+        + "selldata_2023_08_29_31.xlsx"
     )
 
     excel_data = readSellInfo(file_name)
