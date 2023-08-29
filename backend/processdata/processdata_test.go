@@ -40,7 +40,11 @@ func TestSellData(t *testing.T) {
 
 // 更新数据库
 func TestDb(t *testing.T) {
-	processdata.UpdateDataBase()
+	//执行python脚本，从网站下载数据并读取数据，更新json文件
+	processdata.DownloadAndRead("DownloadAndRead.py")
+ 
+	//根据excel文件更新数据库
+	// processdata.UpdateDataBase()
 }
 
 // 根据cn和qq查找谷子信息
@@ -63,10 +67,10 @@ func TestGenerateExcel(t *testing.T) {
 func TestLqbz(t *testing.T) {
 	db := processdata.ConnectDB()
 
-	//执行python脚本，从网站下载数据并读取数据
+	//执行python脚本，从网站下载数据并读取数据，更新json文件
 	_, sell_data_path := processdata.DownloadAndRead("DownloadAndRead.py")
  
-	//根据excel文件更新数据库
+	//根据json文件更新数据库
 	processdata.UpdateDataBase()
 
 	//更新某人的状态

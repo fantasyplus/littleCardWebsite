@@ -4,35 +4,95 @@ from os import path
 import json
 
 
-def processString(string):
-    pattern = r"cn\+群内qq:(.*)"
-    result = re.search(pattern, string)
-    cn_qq_str = ""
+# def processString(string):
+#     pattern = r"cn\+群内qq:(.*)"
+#     result = re.search(pattern, string)
+#     cn_qq_str = ""
+#     cn = ""
+#     qq = ""
+
+#     if result:
+#         cn_qq_str = result.group(1)
+#     else:  # 如果没有cn+群内qq:，则直接返回，第一行标题的特殊处理
+#         return cn, qq
+
+#     # 特殊情况，cn也全是数字
+#     pattern = r"^(\d+)[\+\＋](\d+)$"
+#     match = re.match(pattern, cn_qq_str)
+#     if match:
+#         cn = match.group(1)
+#         qq = match.group(2)
+#         return cn, qq
+
+#     pattern = r"(.*?)\s*(?=\d{6,})"
+#     result = re.findall(pattern, cn_qq_str)
+
+#     if len(result) > 1:
+#         cn = result[0]
+
+#     # 如果没写cn，给一个特定的cn名
+#     if cn == "":
+#         cn = "??????"
+#     # 去除末尾的 + 号
+#     elif cn[-1] == "+" or cn[-1] == "＋":
+#         cn = cn[:-1]
+
+#     match_qq = re.search(r"\d{6,}", cn_qq_str)
+#     if match_qq:
+#         qq = match_qq.group()
+#     else:
+#         qq = "??????"
+
+
+#     return cn, qq
+def processString(input_string):
+    # 初始化返回变量
     cn = ""
     qq = ""
 
-    if result:
-        cn_qq_str = result.group(1)
-    else:  # 如果没有cn+群内qq:，则直接返回，第一行标题的特殊处理
+    # 搜索 cn+群内qq: 模式
+    pattern = r"cn\+群内qq:(.*)"
+    match = re.search(pattern, input_string)
+
+    if not match:  # 如果没有 cn+群内qq:，则直接返回
         return cn, qq
+
+    cn_qq_str = match.group(1)
 
     # 特殊情况，cn也全是数字
-    pattern = r"^(\d+)[\+\＋](\d+)$"
-    match = re.match(pattern, cn_qq_str)
+    digit_pattern = r"^(\d+)[\+\＋](\d+)$"
+    match = re.match(digit_pattern, cn_qq_str)
+    # 直接返回cn和qq全是数字的情况
     if match:
-        cn = match.group(1)
-        qq = match.group(2)
-        return cn, qq
+        return match.group(1), match.group(2)
 
-    pattern = r"(.*?)\s*(?=\d{6,})"
-    result = re.findall(pattern, cn_qq_str)
+    # 尝试从字符串中提取 cn 和 qq
+    # 提取 cn
+    cn_pattern = r"(.*?)\s*(?=\d{6,})|(.+)$"
+    matches = re.findall(cn_pattern, cn_qq_str)
 
-    cn = result[0]
-    # 去除末尾的 + 号
-    if cn[-1] == "+" or cn[-1] == "＋":
-        cn = cn[:-1]
+    if matches:
+        # 如果第一个捕获组为空（没有匹配到后面跟随至少6个数字的内容）
+        # 则使用第二个捕获组的值（即整个cn_qq_str的值）
+        # 适用于只写了cn没有qq的情况
+        cn = matches[0][0] or matches[0][1]
+        cn = cn.strip()  # 移除两端的空白字符
+        if cn.endswith(("+", "＋")):
+            cn = cn[:-1]
 
-    qq = re.search(r"\d{6,}", cn_qq_str).group()
+    # 如果没有提取到 cn
+    if not cn:
+        cn = "??????"
+
+    # 提取 qq
+    qq_pattern = r"\d{6,}"
+    match = re.search(qq_pattern, cn_qq_str)
+
+    if match:
+        qq = match.group()
+    else:
+        # 只写了qq没有cn的情况
+        qq = "??????"
 
     return cn, qq
 
@@ -82,10 +142,8 @@ def processRow(row, single_sheet_data):
 def readSellInfo(path):
     # p = path.dirname(__file__) + "/../test_excel/" + excel_name
     # 读取Excel文件
-    wb = openpyxl.load_workbook(path,data_only=False)
-    sheet_names = wb.sheetnames[4:]
-    # sheet_names=[wb.sheetnames[16]]
-    # print(sheet_names)
+    wb = openpyxl.load_workbook(path, data_only=False)
+    sheet_names = wb.sheetnames[5:]
 
     # 一个表格的所有谷子信息
     # 每一个元素对应一种谷子的信息
@@ -94,7 +152,6 @@ def readSellInfo(path):
 
     for sheet_name in sheet_names:
         sheet = wb[sheet_name]  # 修改为实际的工作表名
-
         # 获取状态所在的列
         condition_index = 0
         for content in sheet[1]:
@@ -146,6 +203,7 @@ def readSellInfo(path):
         elif condition_index == 3:
             # 单种谷子的数据
             single_sheet_data = []
+            print(sheet)
 
             # 读取整个工作表的数据
             for row in sheet.iter_rows():
@@ -163,7 +221,7 @@ def readSellInfo(path):
     return sheetdatas
 
 
-def writeJsonFile(json_name,excel_data):
+def writeJsonFile(json_name, excel_data):
     # 分割每个谷子的数据，然后存入字典
     split_points = []
     for i in range(len(excel_data)):
@@ -200,13 +258,19 @@ def writeJsonFile(json_name,excel_data):
     with open(p, "w", encoding="utf-8") as json_file:
         json.dump(dict_data, json_file, ensure_ascii=False, indent=4)
 
+
 def ReadSell(file_path):
     excel_data = readSellInfo(file_path)
-    writeJsonFile("selldata.json",excel_data) 
+    writeJsonFile("selldata.json", excel_data)
+
 
 if __name__ == "__main__":
-    file_name = "selldata_2023_08_10_1.xlsx"
+    file_name = (
+        path.dirname(__file__)
+        + "/../test_excel/selldata/"
+        + "selldata_2023_08_29_11.xlsx"
+    )
 
     excel_data = readSellInfo(file_name)
 
-    writeJsonFile("selldata.json")
+    writeJsonFile("selldata.json", excel_data)
