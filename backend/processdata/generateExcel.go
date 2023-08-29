@@ -180,14 +180,16 @@ func GenerateSingleTypeSheet(db *gorm.DB, card_data []CardNo, full_name string, 
 	f.SetColWidth(full_name, "A", "A", 20)
 	f.SetColWidth(full_name, "B", "B", 20)
 
-	//设置cn表头
+	//设置谷子名
 	SetCellValueWithErrHandle(f, full_name, "A1", full_name)
+	//设置cn表头
+	SetCellValueWithErrHandle(f, full_name, "A2", "cn")
 	//设置qq表头
-	SetCellValueWithErrHandle(f, full_name, "B1", "qq")
+	SetCellValueWithErrHandle(f, full_name, "B2", "qq")
 	//数量列表头
-	SetCellValueWithErrHandle(f, full_name, "C1", "数量")
+	SetCellValueWithErrHandle(f, full_name, "C2", "数量")
 	//状态列表头
-	SetCellValueWithErrHandle(f, full_name, "D1", "状态")
+	SetCellValueWithErrHandle(f, full_name, "D2", "状态")
 
 	//设置数据
 	for index, data := range card_data {
@@ -204,10 +206,10 @@ func GenerateSingleTypeSheet(db *gorm.DB, card_data []CardNo, full_name string, 
 			status = ""
 		}
 
-		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("A%d", index+2), cn)
-		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("B%d", index+2), qq)
-		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("C%d", index+2), num)
-		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("D%d", index+2), status)
+		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("A%d", index+3), cn)
+		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("B%d", index+3), qq)
+		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("C%d", index+3), num)
+		SetCellValueWithErrHandle(f, full_name, fmt.Sprintf("D%d", index+3), status)
 	}
 }
 
@@ -249,7 +251,7 @@ func GetCharacterCell(character_list []string, card_name string, row int) string
 func SetMultiTypeData(db *gorm.DB, item [][]CardNo, sheet_name string, character_list []string, f *excelize.File) {
 	is_personid_shown := map[int]string{}
 	//excel表数据部分的总行数,从第二行开始
-	total_row := 2
+	total_row := 3
 	for _, datas := range item {
 		for _, data := range datas {
 			// cn_qq := getCNQQ(db, data.PersonID)
@@ -335,19 +337,21 @@ func GenerateMultiTypeSheet(db *gorm.DB, multi_character_infos [][]interface{}, 
 		f.SetColWidth(sheet_name, "A", "A", 20)
 		f.SetColWidth(sheet_name, "B", "B", 20)
 
-		//设置cn表头
+		//设置谷子名
 		SetCellValueWithErrHandle(f, sheet_name, "A1", sheet_name)
+		//设置cn表头
+		SetCellValueWithErrHandle(f, sheet_name, "A2", "cn")
 		//设置qq表头
-		SetCellValueWithErrHandle(f, sheet_name, "B1", "qq")
+		SetCellValueWithErrHandle(f, sheet_name, "B2", "qq")
 
 		//设置角色名（数量列表头）
 		for index, character_name := range character_list {
-			cell_name := fmt.Sprintf("%c1", 'B'+index+1)
+			cell_name := fmt.Sprintf("%c2", 'B'+index+1)
 			SetCellValueWithErrHandle(f, sheet_name, cell_name, character_name)
 		}
 
 		//状态列表头
-		SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("%c1", 'B'+len(character_list)+1), "状态")
+		SetCellValueWithErrHandle(f, sheet_name, fmt.Sprintf("%c2", 'B'+len(character_list)+1), "状态")
 
 		//设置数据部分
 		SetMultiTypeData(db, item, sheet_name, character_list, f)
