@@ -44,7 +44,7 @@ func TestDb(t *testing.T) {
 	processdata.DownloadAndRead("DownloadAndRead.py")
  
 	//根据excel文件更新数据库
-	// processdata.UpdateDataBase()
+	processdata.UpdateDataBase()
 }
 
 // 根据cn和qq查找谷子信息

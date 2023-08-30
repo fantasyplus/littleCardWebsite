@@ -85,7 +85,7 @@ func InsertPersonInfoTable(db *gorm.DB) (
 		card_id = key
 		for _, item := range items {
 			//标题行
-			if len(item) <= 3 {
+			if len(item) == 1 {
 				var ok1 bool
 				card_name, ok1 = item[0].(string)
 
