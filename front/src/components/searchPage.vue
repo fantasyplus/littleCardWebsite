@@ -6,7 +6,7 @@ import axios from "axios"
 //vuetify labs
 import { VDataTableVirtual } from 'vuetify/labs/VDataTable'
 
-// data
+// dataww 
 let currentView = $ref("list")
 let CNInput = $ref("")
 let QQInput = $ref("")
@@ -104,13 +104,19 @@ const handleSearchCNorQQ = async () => {
         let res = await requestWithParams(`/data/search`, params);
         // console.log("search res:", res.data)
         CardInfoList = res.data
+
+        CardInfoList.sort((a, b) => a.CardID - b.CardID);
+
         // console.log("search CardInfoList:", CardInfoList)
         if (res.code === 400) {
             showSearchData = false
-            // alert("没有找到对应的谷子")
+
         }
         else if (res.code === 200) {
             showSearchData = true
+            //清空选择结果
+            cardSelectedList.splice(false, cardSelectedList.length);
+            console.log(cardSelectedList)
             // alert("找到对应的谷子")
         }
     }
@@ -183,10 +189,10 @@ getCardInfoList()
                 </v-icon>
             </div>
 
-            <!-- <div class="table-container" v-if="currentView === 'table'"> -->
-            <!-- <v-data-table-virtual class="card-table" :headers="tableHeaders"
-                    :items="CardInfoList"></v-data-table-virtual> -->
-            <!-- </div> -->
+            <div class="table-container" v-if="currentView === 'table'">
+            <v-data-table-virtual class="card-table" :headers="tableHeaders"
+                    :items="CardInfoList"></v-data-table-virtual>
+            </div>
 
             <div class="card-list-container" v-if="currentView === 'list'">
                 <v-list-subheader>谷子清单</v-list-subheader>
@@ -209,8 +215,7 @@ getCardInfoList()
                                         </v-card-title>
                                     </v-col>
                                     <v-col v-if="!cardSelectedList[i]" cols="2" class="d-flex align-center">
-                                        <v-img src="https://cdn.vuetifyjs.com/images/cards/foster.jpg" width="auto"
-                                            height="auto"></v-img>
+                                        <v-img :src="`/src/assets/${item.CardID}`" width="auto" height="auto"></v-img>
                                     </v-col>
                                 </v-row>
                             </v-card>
@@ -218,11 +223,11 @@ getCardInfoList()
 
                         <v-col :cols="cardSelectedList[i] ? 6 : 3" class="d-flex align-center">
                             <v-row>
-                                <v-col cols="2">
+                                <v-col cols="3">
                                     <v-checkbox @click.stop v-model="cardSelectedList[i]"
                                         @click="handleCardCheckBoxClick(item, i)"></v-checkbox>
                                 </v-col>
-                                <v-col cols="10">
+                                <v-col cols="9">
                                     <v-text-field @click.stop v-if="cardSelectedList[i]" v-model="cardSelectedInfo"
                                         label="默认为全发" color="light-blue-lighten-1"></v-text-field>
                                 </v-col>

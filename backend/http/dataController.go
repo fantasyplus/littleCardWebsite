@@ -29,7 +29,7 @@ func (dc *DataController) SearchCardInfos(c *gin.Context) {
 	decodedQQ, _ := url.QueryUnescape(qq) // URL解码
 
 	res := processdata.FindCardInfoByCNQQ(dc.db, decodedCN, decodedQQ)
-	
+
 	// fmt.Println(res)
 	if len(res) == 0 {
 		c.JSON(http.StatusOK, gin.H{
@@ -48,13 +48,12 @@ func (dc *DataController) SearchCardInfos(c *gin.Context) {
 
 }
 
-//"/v1/data/list?pageSize=100&pageNum=1"
+// "/v1/data/list?pageSize=100&pageNum=1"
 func (dc *DataController) GetAllCardInfos(c *gin.Context) {
 	var dataList []processdata.CardInfo
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "-1"))
 	pageNum, _ := strconv.Atoi(c.DefaultQuery("pageNum", "-1"))
 
-	fmt.Println("12312312")
 	var totalItems int64
 
 	if pageSize > 0 && pageNum > 0 {
@@ -84,4 +83,40 @@ func (dc *DataController) GetAllCardInfos(c *gin.Context) {
 			"pageSize":   pageSize,
 		},
 	})
+}
+
+// "/v1/data/add"
+/*
+input:cn,qq,card_id,card_name,card_character
+card_type,card_condition,card_num,card_deliver,other_info
+
+1.通过cn和qq获得对应的person_id
+2.通过card_id和card数据插入对应的cardNo表
+*/
+func (dc *DataController) AddCardInfoByCNOrQQ(c *gin.Context) {
+	type temp_info struct {
+		CN            string `json:"cn"`
+		QQ            string `json:"qq"`
+		CardID        string `json:"card_id"`
+		CardName      string `json:"card_name"`
+		CardCharacter string `json:"card_character"`
+		CardType      string `json:"card_type"`
+		CardCondition string `json:"card_condition"`
+		CardNum       string `json:"card_num"`
+		CardDeliver   string `json:"card_deliver"`
+		CardOtherInfo string `json:"other_info"`
+	}
+	
+	var tempInfo temp_info
+	if err := c.ShouldBindJSON(&tempInfo); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "add error",
+			"data":    gin.H{},
+			"code":    http.StatusBadRequest,
+		})
+		return
+	}
+	
+	fmt.Println(tempInfo)
+	
 }

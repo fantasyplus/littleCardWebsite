@@ -33,6 +33,7 @@ func main() {
 		{
 			dataGroup.GET("/search", DataController.SearchCardInfos)
 			dataGroup.GET("/list", DataController.GetAllCardInfos)
+			dataGroup.POST("/add", DataController.AddCardInfoByCNOrQQ)
 		}
 	}
 

@@ -32,7 +32,7 @@ let handleLinkCardTable = () => {
                         <a href="https://docs.qq.com/form/page/DRkFnRFlGbmlpaVlE" target="_blank">
                             <v-btn color="green-lighten-1">快速发货通道登记</v-btn>
                         </a>
-                        <router-link to="/cardTable" @click="handleLinkCardTable">
+                        <router-link to="/searchPage" @click="handleLinkCardTable">
                             <v-btn color="blue-grey-lighten-2">快速发货通道</v-btn>
                         </router-link>
                     </li>

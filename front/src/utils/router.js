@@ -1,22 +1,28 @@
 import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 
-const words =() => import('../components/words.vue')
-const cardTable =() => import('../components/cardTable.vue')
-
+const words = () => import('../components/words.vue')
+const searchPage = () => import('../components/searchPage.vue')
+const manager = () => import('../components/manager.vue')
+const test = () => import('../components/test.vue')
 const routes = [
     {
         path: "/",
-        component: words,
+        component: manager,
     },
     {
-        name: "cardTable",
-        path: "/cardTable",
-        component: cardTable,
+        name: "searchPage",
+        path: "/searchPage",
+        component: searchPage,
     },
     {
         name: "words",
         path: "/words",
         component: words,
+    },
+    {
+        name: "manager",
+        path: "/manager",
+        component: manager
     }
 ]
 

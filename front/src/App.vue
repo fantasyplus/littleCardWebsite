@@ -1,9 +1,8 @@
 <script setup>
-import words from "./components/words.vue"
 </script>
 
 <template>
-    <words />
+    <router-view/>
 </template>
 
 <style scoped></style>
